@@ -1,54 +1,15 @@
-$(document).ready(function () {
-    // Setting up global variables
-    var gestureText = document.getElementById('gesture-text');
+// Setting up global variables
+var play = false;
+var prevPlayPauseGestureTime = new Date().getTime();
+var prevGesture;
+var circleGestureDuration = 0;
+var prevCircleGestureTime = prevPlayPauseGestureTime;
 
-    // TODO: Maybe set up model in different file
-    var play = false;
-    var prevPauseGestureTime = new Date().getTime();
-    var prevGesture;
-    var circleGestureDuration = 0;
-    var prevCircleGestureTime = prevPauseGestureTime;
+$(document).ready(function () {
+    var gestureText = document.getElementById('gesture-text');
 
     // Controller options for the Leap Motion
     var controllerOptions = { enableGestures: true, background: true };
-
-    /**
-     * Determines the duration and direction to seek a song.
-     * The clockwise motion of the finger indicates fast forward.
-     * The other direction indicates rewind.
-     * The duration of the gesture corresponds to how much the song should be fast forwarded/
-     * rewinded
-     * @param {Frame} frame The current frame given by the Leap Motion controller.
-     * @param {CircleGesture} gesture The gesture object representing a circular finger movement.
-     * @param {HTMLElement} gestureText The selector to update the text.
-     * @param {number} duration The total time taken for the gesture, in seconds.
-     * @param {number} currentTime The time the current gesture was made, in milliseconds.
-     */
-    function seek(frame, gesture, gestureText, duration, currentTime) {
-        var clockwise = false;
-        var pointableID = gesture.pointableIds[0];
-        var direction = frame.pointable(pointableID).direction;
-        var dotProduct = Leap.vec3.dot(direction, gesture.normal);
-
-        if (dotProduct > 0) clockwise = true;
-
-        // Reset total time taken to complete circle gesture.
-        // The circle gesture is considered complete if:
-        // - the time between detected circle gestures is greater than 500ms
-        // - the direction of the previous circle gesture is not the same as the current circle gesture
-        if (currentTime - prevCircleGestureTime > 500 || prevGesture === "forward" && !clockwise || prevGesture === "reverse" && clockwise) {
-            circleGestureDuration = 0;
-        }
-        circleGestureDuration += 0.5;
-
-        if (clockwise) {
-            $(gestureText).text("Fast Forward Song by " + convertDuration(duration));
-            return 'forward';
-        } else {
-            $(gestureText).text("Rewind Song by " + convertDuration(duration));
-            return 'reverse';
-        }
-    }
 
     Leap.loop(controllerOptions, function (frame) {
         const numHands = frame.hands.length;
@@ -62,7 +23,7 @@ $(document).ready(function () {
             var currentTime = new Date().getTime();
 
             // Detect Play/ Pause Gesture
-            if (detectPlayPauseGesture(hand) && currentTime - prevPauseGestureTime >= 3500) {
+            if (detectPlayPauseGesture(hand) && currentTime - prevPlayPauseGestureTime >= 3500) {
                 if (play) {
                     $(gestureText).text('Pause');
                     setTimeout(() => $(gestureText).text(''), 1500);
@@ -71,7 +32,7 @@ $(document).ready(function () {
                     setTimeout(() => $(gestureText).text(''), 1500);
                 }
                 play = !play;
-                prevPauseGestureTime = new Date().getTime();
+                prevPlayPauseGestureTime = new Date().getTime();
                 prevGesture = 'halt';
                 circleGestureDuration = 0;
             }
@@ -97,6 +58,44 @@ $(document).ready(function () {
         }
     }).use('screenPosition', { scale: 0.5 });
 });
+
+/**
+ * Determines the duration and direction to seek a song.
+ * The clockwise motion of the finger indicates fast forward.
+ * The other direction indicates rewind.
+ * The duration of the gesture corresponds to how much the song should be fast forwarded/
+ * rewinded
+ * @param {Frame} frame The current frame given by the Leap Motion controller.
+ * @param {CircleGesture} gesture The gesture object representing a circular finger movement.
+ * @param {HTMLElement} gestureText The selector to update the text.
+ * @param {number} duration The total time taken for the gesture, in seconds.
+ * @param {number} currentTime The time the current gesture was made, in milliseconds.
+ */
+function seek(frame, gesture, gestureText, duration, currentTime) {
+    var clockwise = false;
+    var pointableID = gesture.pointableIds[0];
+    var direction = frame.pointable(pointableID).direction;
+    var dotProduct = Leap.vec3.dot(direction, gesture.normal);
+
+    if (dotProduct > 0) clockwise = true;
+
+    // Reset total time taken to complete circle gesture.
+    // The circle gesture is considered complete if:
+    // - the time between detected circle gestures is greater than 500ms
+    // - the direction of the previous circle gesture is not the same as the current circle gesture
+    if (currentTime - prevCircleGestureTime > 500 || prevGesture === "forward" && !clockwise || prevGesture === "reverse" && clockwise) {
+        circleGestureDuration = 0;
+    }
+    circleGestureDuration += 0.5;
+
+    if (clockwise) {
+        $(gestureText).text("Fast Forward Song by " + convertDuration(duration));
+        return 'forward';
+    } else {
+        $(gestureText).text("Rewind Song by " + convertDuration(duration));
+        return 'reverse';
+    }
+}
 
 /**
  * Determines if the user is indicating to Pause/ Play the music.
