@@ -1,5 +1,7 @@
 $(document).ready(function () {
     var gestureText = document.getElementById('gesture-text');
+    var play = false;
+    var prevGestureTime = '';
 
     var controllerOptions = { enableGestures: true, background: true };
 
@@ -12,27 +14,43 @@ $(document).ready(function () {
         }
         else if (numHands == 1) {
             var hand = frame.hands[0];
-            var handPos = hand.screenPosition();
-
-            if (frame.valid && frame.gestures.length > 0) {
-                frame.gestures.forEach(function (gesture) {
-                    switch (gesture.type) {
-                        case "circle":
-                            seek(frame, gesture, gestureText);
-                            console.log("Circle Gesture");
-                            break;
-                        case "keyTap":
-                            console.log("Key Tap Gesture");
-                            break;
-                        case "screenTap":
-                            console.log("Screen Tap Gesture");
-                            break;
-                        case "swipe":
-                            console.log("Swipe Gesture");
-                            break;
-                    }
-                });
+            var currentTime = new Date().getTime();
+            
+            if (detectPauseGesture(hand) && currentTime - prevGestureTime >= 3500) {
+                if (play) {
+                    $(gestureText).text('Pause');
+                    setTimeout(() => $(gestureText).text(''), 1500);
+                } else {
+                    $(gestureText).text('Play');
+                    setTimeout(() => $(gestureText).text(''), 1500);
+                }
+                play = !play;
+                prevGestureTime = new Date().getTime();
             }
+            
+
+            
+
+
+            // if (frame.valid && frame.gestures.length > 0) {
+            //     frame.gestures.forEach(function (gesture) {
+            //         switch (gesture.type) {
+            //             case "circle":
+            //                 seek(frame, gesture, gestureText);
+            //                 console.log("Circle Gesture");
+            //                 break;
+            //             case "keyTap":
+            //                 console.log("Key Tap Gesture");
+            //                 break;
+            //             case "screenTap":
+            //                 console.log("Screen Tap Gesture");
+            //                 break;
+            //             case "swipe":
+            //                 console.log("Swipe Gesture");
+            //                 break;
+            //         }
+            //     });
+            // }
         } else {
             // warn user
             $(gestureText).text("Only use one hand!");
@@ -66,6 +84,16 @@ function seek(frame, gesture, gestureText) {
     } else {
         $(gestureText).text("Rewind Song by " + convertDuration(duration));
     }
+}
+
+function detectPauseGesture(hand) {
+    var pitch = hand.pitch();
+    var grabStrength = hand.grabStrength;
+    console.log(pitch, grabStrength);
+
+    var openHand = grabStrength < 0.25;
+    var verticalHand = (pitch > 1.15 && pitch < 2);
+    return openHand && verticalHand;
 }
 
 /**
