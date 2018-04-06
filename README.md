@@ -8,3 +8,4 @@ Run locally with
 | Feature              | Trigger + Description |
 |----------------------|-----------------------|
 | Fast Forward/ Rewind | Rotate the tip of the finger in the clockwise direction to fast forward the song, anti-clockwise to rewind. |
+| Play/ Pause          | Extend the hand out to play/ pause the current song if paused/ playing. |
