@@ -9,3 +9,4 @@ Run locally with
 |----------------------|-----------------------|
 | Fast Forward/ Rewind | Rotate the tip of the finger in the clockwise direction to fast forward the song, anti-clockwise to rewind. |
 | Play/ Pause          | Extend the hand out to play/ pause the current song if paused/ playing. |
+| Save Current Song | Make thumbs up gesture to save the current song to the user's library. |

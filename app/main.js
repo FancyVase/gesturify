@@ -5,6 +5,9 @@ var prevGesture;
 var circleGestureDuration = 0;
 var prevCircleGestureTime = prevPlayPauseGestureTime;
 
+// TODO: Severity: High
+// Ensure that there is a delay between recognized gestures, maybe 3 seconds?
+
 $(document).ready(function () {
     var gestureText = document.getElementById('gesture-text');
 
@@ -35,6 +38,11 @@ $(document).ready(function () {
                 prevPlayPauseGestureTime = new Date().getTime();
                 prevGesture = 'halt';
                 circleGestureDuration = 0;
+            }
+
+            else if (detectThumbsUpGesture(hand)) {
+                $(gestureText).text('Saved to Library!');
+                setTimeout(() => $(gestureText).text(''), 1500);
             }
 
             else if (frame.valid && frame.gestures.length > 0) {
@@ -110,6 +118,20 @@ function detectPlayPauseGesture(hand) {
     var openHand = grabStrength < 0.25;
     var verticalHand = (pitch > 1.15 && pitch < 2);
     return openHand && verticalHand;
+}
+
+/**
+ * Determines if the user is indicating to save the current song to the user's library.
+ * To do this, the user must make a thumbs up gesture.
+ * @param {Hand} hand The physical characteristics of the detected hand.
+ * @returns True if the hand is making a thumbs up gesture, False otherwise.
+ */
+function detectThumbsUpGesture(hand) {
+    var thumbExtended = hand.thumb.extended;
+    var thumbUpright = hand.thumb.direction[1] > 0.4;
+    var closedFingers = (hand.indexFinger.extended || hand.middleFinger.extended || hand.ringFinger.extended || hand.pinky.extended);
+
+    return thumbExtended && !closedFingers && thumbUpright;
 }
 
 /**
