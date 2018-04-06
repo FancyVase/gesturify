@@ -11,12 +11,15 @@
     <title>Gesturify</title>
 
     <!-- CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/semantic.min.css">
     <link rel="stylesheet" type="text/css" href="css/main.css" />
     <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
 
     <!-- jQuery -->
     <script type="text/javascript" src="lib/jquery.min.js"></script>
+
+    <!-- Semantic UI -->
+    <script type="text/javascript" src="lib/semantic.min.js"></script>
 
     <!-- Leap -->
     <script type="text/javascript" src="lib/leap.min.js"></script>
@@ -30,7 +33,37 @@
 </head>
 
 <body>
-    <div class="container">
+    <div class="ui sidebar visible inverted vertical menu">
+        <div class="item name">
+            <b>Gesturify</b>
+        </div>
+        <div class="item">
+            <div class="playlist-header">
+                <b>Playlists</b>
+            </div>
+            <div class="menu">
+                <a class="item playlist-item">
+                    Spring Break Road Trip
+                </a>
+                <a class="item playlist-item">
+                    Get Pumped
+                </a>
+                <a class="item playlist-item">
+                    Teenage Angst
+                </a>
+                <a class="item playlist-item">
+                    Christmas Music
+                </a>
+                <a class="item playlist-item">
+                    It's a trap!
+                </a>
+                <a class="item playlist-item">
+                    Focus
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="pusher">
         <h1 id="title">Gesturify</h1>
         <div id="gesture-text"></div>
     </div>
