@@ -1,9 +1,37 @@
 $(document).ready(function () {
     var gestureText = document.getElementById('gesture-text');
     var play = false;
-    var prevGestureTime = '';
+    var prevPauseGestureTime = new Date().getTime();
+    var prevGesture;
+    var circleGestureDuration = 0;
+    var prevCircleGestureTime = prevPauseGestureTime;
+    var circleActions = ["forward", "reverse"];
 
     var controllerOptions = { enableGestures: true, background: true };
+
+    function seek(frame, gesture, gestureText, duration, currentTime) {
+
+        var clockwise = false;
+        var pointableID = gesture.pointableIds[0];
+        var direction = frame.pointable(pointableID).direction;
+        var dotProduct = Leap.vec3.dot(direction, gesture.normal);
+    
+        if (dotProduct > 0) clockwise = true;
+
+        if (circleActions.indexOf(prevGesture) < 0 || currentTime - prevCircleGestureTime > 500 || 
+            prevGesture === "forward" && !clockwise || prevGesture === "reverse" && clockwise) {
+            circleGestureDuration = 0;
+        }
+        circleGestureDuration += 0.5;
+    
+        if (clockwise) {
+            $(gestureText).text("Fast Forward Song by " + convertDuration(duration));
+            return 'forward';
+        } else {
+            $(gestureText).text("Rewind Song by " + convertDuration(duration));
+            return 'reverse';
+        }
+    }
 
     Leap.loop(controllerOptions, function (frame) {
         const numHands = frame.hands.length;
@@ -15,8 +43,8 @@ $(document).ready(function () {
         else if (numHands == 1) {
             var hand = frame.hands[0];
             var currentTime = new Date().getTime();
-            
-            if (detectPauseGesture(hand) && currentTime - prevGestureTime >= 3500) {
+
+            if (detectPauseGesture(hand) && currentTime - prevPauseGestureTime >= 3500) {
                 if (play) {
                     $(gestureText).text('Pause');
                     setTimeout(() => $(gestureText).text(''), 1500);
@@ -25,32 +53,26 @@ $(document).ready(function () {
                     setTimeout(() => $(gestureText).text(''), 1500);
                 }
                 play = !play;
-                prevGestureTime = new Date().getTime();
+                prevPauseGestureTime = new Date().getTime();
+                prevGesture = 'halt';
+                circleGestureDuration = 0;
             }
-            
 
-            
+            else if (frame.valid && frame.gestures.length > 0) {
+                frame.gestures.forEach(function (gesture) {
+                    switch (gesture.type) {
+                        case "circle":          
 
-
-            // if (frame.valid && frame.gestures.length > 0) {
-            //     frame.gestures.forEach(function (gesture) {
-            //         switch (gesture.type) {
-            //             case "circle":
-            //                 seek(frame, gesture, gestureText);
-            //                 console.log("Circle Gesture");
-            //                 break;
-            //             case "keyTap":
-            //                 console.log("Key Tap Gesture");
-            //                 break;
-            //             case "screenTap":
-            //                 console.log("Screen Tap Gesture");
-            //                 break;
-            //             case "swipe":
-            //                 console.log("Swipe Gesture");
-            //                 break;
-            //         }
-            //     });
-            // }
+                            prevGesture = seek(frame, gesture, gestureText, circleGestureDuration, currentTime);
+                            prevCircleGestureTime = new Date().getTime();
+                            console.log("Circle Gesture");
+                            break;
+                        case "swipe":
+                            console.log("Swipe Gesture");
+                            break;
+                    }
+                });
+            }
         } else {
             // warn user
             $(gestureText).text("Only use one hand!");
@@ -58,38 +80,9 @@ $(document).ready(function () {
     }).use('screenPosition', { scale: 0.5 });
 });
 
-/**
- * Determines the duration and direction to seek a song.
- * The clockwise motion of the finger indicates fast forward.
- * The other direction indicates rewind.
- * The duration of the gesture corresponds to how much the song should be fast forwarded/
- * rewinded.
- * @param {Frame} frame The current frame given by the Leap Motion controller.
- * @param {CircleGesture} gesture The gesture object representing a circular finger movement.
- * @param {HTMLElement} gestureText The selector to update the text.
- */
-function seek(frame, gesture, gestureText) {
-
-    var clockwise = false;
-    var pointableID = gesture.pointableIds[0];
-    var direction = frame.pointable(pointableID).direction;
-    var dotProduct = Leap.vec3.dot(direction, gesture.normal);
-
-    if (dotProduct > 0) clockwise = true;
-
-    var duration = gesture.duration;
-
-    if (clockwise) {
-        $(gestureText).text("Fast Forward Song by " + convertDuration(duration));
-    } else {
-        $(gestureText).text("Rewind Song by " + convertDuration(duration));
-    }
-}
-
 function detectPauseGesture(hand) {
     var pitch = hand.pitch();
     var grabStrength = hand.grabStrength;
-    console.log(pitch, grabStrength);
 
     var openHand = grabStrength < 0.25;
     var verticalHand = (pitch > 1.15 && pitch < 2);
@@ -98,11 +91,11 @@ function detectPauseGesture(hand) {
 
 /**
  * Converts microseconds to a string of format HH:MM:SS
+ * TODO: Change this
  * @param {number} durationMS The elapsed duration of the circle gesture up to the frame containing this gesture, in microseconds.
  * @returns The corresponding time in string format HH:MM:SS
  */
-function convertDuration(durationMS) {
-    var duration = durationMS / 1000000;
+function convertDuration(duration) {
     var hours = Math.floor(duration / 3600);
     var minutes = Math.floor((duration - (hours * 3600)) / 60);
     var seconds = Math.ceil(duration - (hours * 3600) - (minutes * 60));
