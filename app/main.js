@@ -175,9 +175,11 @@ function convertDuration(duration) {
  */
 function togglePlaylistMode() {
     if (addToPlaylistMode) {
-        $('button').text('Add to Playlist');
+        $('.ui.left.attached.button').removeClass('disabled');
+        $('.ui.right.attached.button').addClass('disabled');
     } else {
-        $('button').text('Control Player');
+        $('.ui.left.attached.button').addClass('disabled');
+        $('.ui.right.attached.button').removeClass('disabled');
     }
     addToPlaylistMode = !addToPlaylistMode;
 }
