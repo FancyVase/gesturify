@@ -4,12 +4,18 @@ var prevPlayPauseGestureTime = new Date().getTime();
 var prevGesture;
 var circleGestureDuration = 0;
 var prevCircleGestureTime = prevPlayPauseGestureTime;
+var prevPlaylistItem = -1;
+var addToPlaylistMode = false;
 
 // TODO: Severity: High
 // Ensure that there is a delay between recognized gestures, maybe 3 seconds?
 
 $(document).ready(function () {
     var gestureText = document.getElementById('gesture-text');
+    var listingsOffset = $('.menu.listings').offset().top;
+    var listingsHeight = $('.menu.listings').outerHeight();
+    var itemHeight = $('.playlist-item').outerHeight();
+    var numItems = $('.playlist-item').length;
 
     // Controller options for the Leap Motion
     var controllerOptions = { enableGestures: true, background: true };
@@ -25,40 +31,63 @@ $(document).ready(function () {
             var hand = frame.hands[0];
             var currentTime = new Date().getTime();
 
-            // Detect Play/ Pause Gesture
-            if (detectPlayPauseGesture(hand) && currentTime - prevPlayPauseGestureTime >= 3500) {
-                if (play) {
-                    $(gestureText).text('Pause');
-                    setTimeout(() => $(gestureText).text(''), 1500);
+            if (addToPlaylistMode) {
+                var handPostion = hand.screenPosition();
+                var yPosition = handPostion[1];
+
+                if (yPosition - listingsOffset > 0 && yPosition - listingsOffset < listingsHeight) {
+                    $('.circle.icon').css({ top: yPosition.toString() + 'px', right: '18%' });
+                    var itemNum = Math.floor((yPosition - listingsOffset) / itemHeight);
+                    if (itemNum !== prevPlaylistItem) {
+                        $('#item' + prevPlaylistItem.toString()).removeClass('active');
+                    }
+                    $('#item' + itemNum.toString()).addClass('active');
+                    $(gestureText).text($('#item' + itemNum.toString()).text());
+                    prevPlaylistItem = itemNum;
                 } else {
-                    $(gestureText).text('Play');
+                    prevPlaylistItem = -1;
+                    $('.playlist-item').removeClass('active');
+                }
+            } else {
+                prevPlaylistItem = -1;
+                $('.playlist-item').removeClass('active');
+                $('.circle.icon').css({ top: '0px', right: '0%' });
+
+                // Detect Play/ Pause Gesture
+                if (detectPlayPauseGesture(hand) && currentTime - prevPlayPauseGestureTime >= 3500) {
+                    if (play) {
+                        $(gestureText).text('Pause');
+                        setTimeout(() => $(gestureText).text(''), 1500);
+                    } else {
+                        $(gestureText).text('Play');
+                        setTimeout(() => $(gestureText).text(''), 1500);
+                    }
+                    play = !play;
+                    prevPlayPauseGestureTime = new Date().getTime();
+                    prevGesture = 'halt';
+                    circleGestureDuration = 0;
+                }
+
+                else if (detectThumbsUpGesture(hand)) {
+                    $(gestureText).text('Saved to Library!');
                     setTimeout(() => $(gestureText).text(''), 1500);
                 }
-                play = !play;
-                prevPlayPauseGestureTime = new Date().getTime();
-                prevGesture = 'halt';
-                circleGestureDuration = 0;
-            }
 
-            else if (detectThumbsUpGesture(hand)) {
-                $(gestureText).text('Saved to Library!');
-                setTimeout(() => $(gestureText).text(''), 1500);
-            }
-
-            else if (frame.valid && frame.gestures.length > 0) {
-                frame.gestures.forEach(function (gesture) {
-                    switch (gesture.type) {
-                        // Detect Fast Forward/ Rewind Gesure
-                        case "circle":
-                            prevGesture = seek(frame, gesture, gestureText, circleGestureDuration, currentTime);
-                            prevCircleGestureTime = new Date().getTime();
-                            console.log("Circle Gesture");
-                            break;
-                        case "swipe":
-                            console.log("Swipe Gesture");
-                            break;
-                    }
-                });
+                else if (frame.valid && frame.gestures.length > 0) {
+                    frame.gestures.forEach(function (gesture) {
+                        switch (gesture.type) {
+                            // Detect Fast Forward/ Rewind Gesure
+                            case "circle":
+                                prevGesture = seek(frame, gesture, gestureText, circleGestureDuration, currentTime);
+                                prevCircleGestureTime = new Date().getTime();
+                                console.log("Circle Gesture");
+                                break;
+                            case "swipe":
+                                console.log("Swipe Gesture");
+                                break;
+                        }
+                    });
+                }
             }
         } else {
             // warn user
@@ -150,7 +179,18 @@ function convertDuration(duration) {
     return `${hours}:${minutes}:${seconds}`;
 }
 
+function addToPlaylist() {
+    if (addToPlaylistMode) {
+        $('button').text('Add to Playlist');
+        addToPlaylistMode = false;
+    } else {
+        $('button').text('Control Player');
+        addToPlaylistMode = true;
+    }
+}
+
 // TODO
-// [] Show cursor on screen
+// [] detect if on page
+// [/] Show cursor on screen 
 // [] Highlight hovered over item
 // [] Show what is being hovered

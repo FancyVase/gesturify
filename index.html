@@ -35,6 +35,7 @@
 <body>
     <div class="ui container">
         <div class="ui sidebar visible inverted vertical menu">
+            <i class="disabled circle icon"></i>
             <div class="item name">
                 <b>Gesturify</b>
             </div>
@@ -42,27 +43,28 @@
                 <div class="playlist-header">
                     <b>Playlists</b>
                 </div>
-                <div class="menu">
-                    <a class="item playlist-item">
+                <div class="menu listings">
+                    <a class="item playlist-item" id="item0">
                         Spring Break Road Trip
                     </a>
-                    <a class="item playlist-item">
+                    <a class="item playlist-item" id="item1">
                         Get Pumped
                     </a>
-                    <a class="item playlist-item">
+                    <a class="item playlist-item" id="item2">
                         Teenage Angst
                     </a>
-                    <a class="item playlist-item">
+                    <a class="item playlist-item" id="item3">
                         Christmas Music
                     </a>
-                    <a class="item playlist-item">
+                    <a class="item playlist-item" id="item4">
                         It's a trap!
                     </a>
-                    <a class="item playlist-item">
+                    <a class="item playlist-item" id="item5">
                         Focus
                     </a>
                 </div>
             </div>
+            <button class="ui button" onclick="addToPlaylist()">Add to Playlist</button>
         </div>
 
         <div class="pusher">

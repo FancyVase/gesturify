@@ -35,3 +35,13 @@ body {
     font-size: 100px;
     line-height: 150%;
 }
+.circle.icon {
+    position: absolute;
+    top: 0px;
+    right: 0%;
+}
+
+.ui.button {
+    margin-top: 20px;
+    margin-left: 22.5%;
+}
