@@ -74,7 +74,9 @@ $(document).ready(function () {
                                 prevCircleGestureTime = new Date().getTime();
                                 console.log("Circle Gesture");
                                 break;
+                            // Detect Skip to Next/ Previous Gesture
                             case "swipe":
+                                prevGesture = skip(frame, gesture, currentTime);
                                 console.log("Swipe Gesture");
                                 break;
                         }
@@ -122,6 +124,26 @@ function seek(frame, gesture, duration, currentTime) {
     } else {
         $(TEXT_SELECTOR).text("Rewind Song by " + convertDuration(duration));
         return 'reverse';
+    }
+}
+
+/**
+ * Determines whether to skip to the next or previous track.
+ * A swipe to the left indicates skip to the next track.
+ * A swipe to the right indicates skip to the previous track.
+ * @param {Frame} frame The current frame given by the Leap Motion controller.
+ * @param {CircleGesture} gesture The gesture object representing a hand swipe.
+ * @param {number} currentTime The time the current gesture was made, in milliseconds.
+ */
+function skip(frame, gesture, currentTime) {
+    var next = gesture.direction[0] < 0;
+
+    if (next) {
+        $(TEXT_SELECTOR).text("Playing Next Song");
+        return 'next';
+    } else {
+        $(TEXT_SELECTOR).text("Playing Previous Song ");
+        return 'previous';
     }
 }
 
