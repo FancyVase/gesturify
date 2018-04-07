@@ -4,18 +4,22 @@ var prevPlayPauseGestureTime = new Date().getTime();
 var prevGesture;
 var circleGestureDuration = 0;
 var prevCircleGestureTime = prevPlayPauseGestureTime;
-var prevPlaylistItem = -1;
 var addToPlaylistMode = false;
+
+// Selectors
+const TEXT_SELECTOR = '#gesture-text';
+const MENU_SELECTOR = '.menu.listings';
+const PLAYLIST_ITEM_SELECTOR = '.playlist-item';
+const CURSOR_SELECTOR = '.circle.icon';
 
 // TODO: Severity: High
 // Ensure that there is a delay between recognized gestures, maybe 3 seconds?
 
 $(document).ready(function () {
-    var gestureText = document.getElementById('gesture-text');
-    var listingsOffset = $('.menu.listings').offset().top;
-    var listingsHeight = $('.menu.listings').outerHeight();
-    var itemHeight = $('.playlist-item').outerHeight();
-    var numItems = $('.playlist-item').length;
+    var listingsTopPos = $(MENU_SELECTOR).offset().top;
+    var listingsHeight = $(MENU_SELECTOR).outerHeight();
+    var itemHeight = $(PLAYLIST_ITEM_SELECTOR).outerHeight();
+    var numItems = $(PLAYLIST_ITEM_SELECTOR).length;
 
     // Controller options for the Leap Motion
     var controllerOptions = { enableGestures: true, background: true };
@@ -25,42 +29,29 @@ $(document).ready(function () {
 
         // reset text
         if (numHands == 0) {
-            $(gestureText).text('');
+            $(TEXT_SELECTOR).text('');
         }
         else if (numHands == 1) {
             var hand = frame.hands[0];
             var currentTime = new Date().getTime();
 
             if (addToPlaylistMode) {
-                var handPostion = hand.screenPosition();
-                var yPosition = handPostion[1];
 
-                if (yPosition - listingsOffset > 0 && yPosition - listingsOffset < listingsHeight) {
-                    $('.circle.icon').css({ top: yPosition.toString() + 'px', right: '18%' });
-                    var itemNum = Math.floor((yPosition - listingsOffset) / itemHeight);
-                    if (itemNum !== prevPlaylistItem) {
-                        $('#item' + prevPlaylistItem.toString()).removeClass('active');
-                    }
-                    $('#item' + itemNum.toString()).addClass('active');
-                    $(gestureText).text($('#item' + itemNum.toString()).text());
-                    prevPlaylistItem = itemNum;
-                } else {
-                    prevPlaylistItem = -1;
-                    $('.playlist-item').removeClass('active');
-                }
+                selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight);
+
             } else {
-                prevPlaylistItem = -1;
-                $('.playlist-item').removeClass('active');
-                $('.circle.icon').css({ top: '0px', right: '0%' });
+
+                resetPlaylistAppearance();
+                resetCursor();
 
                 // Detect Play/ Pause Gesture
                 if (detectPlayPauseGesture(hand) && currentTime - prevPlayPauseGestureTime >= 3500) {
                     if (play) {
-                        $(gestureText).text('Pause');
-                        setTimeout(() => $(gestureText).text(''), 1500);
+                        $(TEXT_SELECTOR).text('Pause');
+                        setTimeout(() => $(TEXT_SELECTOR).text(''), 1500);
                     } else {
-                        $(gestureText).text('Play');
-                        setTimeout(() => $(gestureText).text(''), 1500);
+                        $(TEXT_SELECTOR).text('Play');
+                        setTimeout(() => $(TEXT_SELECTOR).text(''), 1500);
                     }
                     play = !play;
                     prevPlayPauseGestureTime = new Date().getTime();
@@ -68,17 +59,18 @@ $(document).ready(function () {
                     circleGestureDuration = 0;
                 }
 
+                // Detect Save to Library Gesture
                 else if (detectThumbsUpGesture(hand)) {
-                    $(gestureText).text('Saved to Library!');
-                    setTimeout(() => $(gestureText).text(''), 1500);
+                    $(TEXT_SELECTOR).text('Saved to Library!');
+                    setTimeout(() => $(TEXT_SELECTOR).text(''), 1500);
                 }
 
                 else if (frame.valid && frame.gestures.length > 0) {
                     frame.gestures.forEach(function (gesture) {
                         switch (gesture.type) {
-                            // Detect Fast Forward/ Rewind Gesure
+                            // Detect Fast Forward/ Rewind Gesture
                             case "circle":
-                                prevGesture = seek(frame, gesture, gestureText, circleGestureDuration, currentTime);
+                                prevGesture = seek(frame, gesture, circleGestureDuration, currentTime);
                                 prevCircleGestureTime = new Date().getTime();
                                 console.log("Circle Gesture");
                                 break;
@@ -91,7 +83,7 @@ $(document).ready(function () {
             }
         } else {
             // warn user
-            $(gestureText).text("Only use one hand!");
+            $(TEXT_SELECTOR).text("Only use one hand!");
         }
     }).use('screenPosition', { scale: 0.5 });
 });
@@ -104,11 +96,10 @@ $(document).ready(function () {
  * rewinded
  * @param {Frame} frame The current frame given by the Leap Motion controller.
  * @param {CircleGesture} gesture The gesture object representing a circular finger movement.
- * @param {HTMLElement} gestureText The selector to update the text.
  * @param {number} duration The total time taken for the gesture, in seconds.
  * @param {number} currentTime The time the current gesture was made, in milliseconds.
  */
-function seek(frame, gesture, gestureText, duration, currentTime) {
+function seek(frame, gesture, duration, currentTime) {
     var clockwise = false;
     var pointableID = gesture.pointableIds[0];
     var direction = frame.pointable(pointableID).direction;
@@ -126,10 +117,10 @@ function seek(frame, gesture, gestureText, duration, currentTime) {
     circleGestureDuration += 0.5;
 
     if (clockwise) {
-        $(gestureText).text("Fast Forward Song by " + convertDuration(duration));
+        $(TEXT_SELECTOR).text("Fast Forward Song by " + convertDuration(duration));
         return 'forward';
     } else {
-        $(gestureText).text("Rewind Song by " + convertDuration(duration));
+        $(TEXT_SELECTOR).text("Rewind Song by " + convertDuration(duration));
         return 'reverse';
     }
 }
@@ -179,18 +170,60 @@ function convertDuration(duration) {
     return `${hours}:${minutes}:${seconds}`;
 }
 
-function addToPlaylist() {
+/**
+ * Toggles between the ability to select a playlist or make gestures to control the player.
+ */
+function togglePlaylistMode() {
     if (addToPlaylistMode) {
         $('button').text('Add to Playlist');
-        addToPlaylistMode = false;
     } else {
         $('button').text('Control Player');
-        addToPlaylistMode = true;
+    }
+    addToPlaylistMode = !addToPlaylistMode;
+}
+
+/**
+ * Determines what playlist the user wants to add a song to based on his/her hand's position.
+ * Updates the position of the cursor.
+ * @param {Hand} hand The physical characteristics of the detected hand.
+ * @param {number} listingsTopPos The y-coordinate of the start of the list of playlists relative to the document, in pixels.
+ * @param {number} listingsHeight The total height of the list of playlists, in pixels.
+ * @param {number} itemHeight The height of one playlist item, in pixels.
+ */
+function selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight) {
+    var handPostion = hand.screenPosition();
+    var yPosition = handPostion[1];
+
+    // Only update the position of the cursor if hand's position is within the region with
+    // playlist items
+    if (yPosition - listingsTopPos > 0 && yPosition - listingsTopPos < listingsHeight) {
+        $(CURSOR_SELECTOR).css({ top: yPosition.toString() + 'px', right: '18%' });
+
+        // Determine which playlist the cursor is over
+        var playlistItemIdNum = Math.floor((yPosition - listingsTopPos) / itemHeight);
+
+        resetPlaylistAppearance();
+
+        // Highlight the playlist marked by the cursor
+        $('#item' + playlistItemIdNum.toString()).addClass('active');
+
+        // Report the highlighted playlist name
+        $(TEXT_SELECTOR).text($('#item' + playlistItemIdNum.toString()).text());
+    } else {
+        resetPlaylistAppearance();
     }
 }
 
-// TODO
-// [] detect if on page
-// [/] Show cursor on screen 
-// [] Highlight hovered over item
-// [] Show what is being hovered
+/**
+ * Resets the styling of the playlists.
+ */
+function resetPlaylistAppearance() {
+    $(PLAYLIST_ITEM_SELECTOR).removeClass('active');
+}
+
+/**
+ * Resets the position of the cursor.
+ */
+function resetCursor() {
+    $(CURSOR_SELECTOR).css({ top: '0px', right: '0%' });
+}
