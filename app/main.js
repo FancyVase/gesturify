@@ -149,3 +149,8 @@ function convertDuration(duration) {
     if (seconds < 10) { seconds = "0" + seconds; }
     return `${hours}:${minutes}:${seconds}`;
 }
+
+// TODO
+// [] Show cursor on screen
+// [] Highlight hovered over item
+// [] Show what is being hovered
