@@ -14,6 +14,8 @@ const CURSOR_SELECTOR = '.circle.icon';
 
 // TODO: Severity: High
 // Ensure that there is a delay between recognized gestures, maybe 3 seconds?
+// TODO: Severity: Medium
+// Add shuffling (so-so gesture). Challenging to determine.
 
 $(document).ready(function () {
     var listingsTopPos = $(MENU_SELECTOR).offset().top;
