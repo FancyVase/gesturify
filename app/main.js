@@ -65,6 +65,12 @@ $(document).ready(function () {
                     setTimeout(() => $(TEXT_SELECTOR).text(''), 1500);
                 }
 
+                // Detect Search Gesture
+                else if (detectFistGesture(hand)) {
+                    $(TEXT_SELECTOR).text('Searching...');
+                    setTimeout(() => $(TEXT_SELECTOR).text(''), 1500);
+                }
+
                 else if (frame.valid && frame.gestures.length > 0) {
                     frame.gestures.forEach(function (gesture) {
                         switch (gesture.type) {
@@ -141,7 +147,7 @@ function seek(frame, gesture, duration, currentTime) {
  */
 function swipe(frame, gesture, currentTime) {
     var isHorizontal = Math.abs(gesture.direction[0]) > Math.abs(gesture.direction[1]);
-    
+
     // Change the track
     if (isHorizontal) {
         var previous = gesture.direction[0] > 0;
@@ -196,6 +202,18 @@ function detectThumbsUpGesture(hand) {
     var closedFingers = (hand.indexFinger.extended || hand.middleFinger.extended || hand.ringFinger.extended || hand.pinky.extended);
 
     return thumbExtended && !closedFingers && thumbUpright;
+}
+
+/**
+ * Determines if the user is indicating to search for a song.
+ * To do this, the user must make a closed fist gesture.
+ * @param {Hand} hand The physical characteristics of the detected hand.
+ * @returns True if the hand is making a closed fist gesture, False otherwise.
+ */
+function detectFistGesture(hand) {
+    var closedFingers = (hand.thumb.extended || hand.indexFinger.extended || hand.middleFinger.extended || hand.ringFinger.extended || hand.pinky.extended);
+
+    return !closedFingers;
 }
 
 /**
