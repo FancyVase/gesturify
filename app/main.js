@@ -74,9 +74,9 @@ $(document).ready(function () {
                                 prevCircleGestureTime = new Date().getTime();
                                 console.log("Circle Gesture");
                                 break;
-                            // Detect Skip to Next/ Previous Gesture
+                            // Detect Song Skipping or Volume Control (Swipe Gesture)
                             case "swipe":
-                                prevGesture = skip(frame, gesture, currentTime);
+                                prevGesture = swipe(frame, gesture, currentTime);
                                 console.log("Swipe Gesture");
                                 break;
                         }
@@ -128,23 +128,45 @@ function seek(frame, gesture, duration, currentTime) {
 }
 
 /**
- * Determines whether to skip to the next or previous track.
+ * Determines what kind of swipe was made.
+ * A horizontal swipe changes the track.
  * A swipe to the left indicates skip to the next track.
  * A swipe to the right indicates skip to the previous track.
+ * A vertical swipe changes the volume.
+ * A swipe up raises the volume.
+ * A swipe down lowers the volume.
  * @param {Frame} frame The current frame given by the Leap Motion controller.
  * @param {CircleGesture} gesture The gesture object representing a hand swipe.
  * @param {number} currentTime The time the current gesture was made, in milliseconds.
  */
-function skip(frame, gesture, currentTime) {
-    var next = gesture.direction[0] < 0;
+function swipe(frame, gesture, currentTime) {
+    var isHorizontal = Math.abs(gesture.direction[0]) > Math.abs(gesture.direction[1]);
+    
+    // Change the track
+    if (isHorizontal) {
+        var previous = gesture.direction[0] > 0;
 
-    if (next) {
-        $(TEXT_SELECTOR).text("Playing Next Song");
-        return 'next';
+        if (previous) {
+            $(TEXT_SELECTOR).text("Playing Previous Song");
+            return 'previous';
+        } else {
+            $(TEXT_SELECTOR).text("Playing Next Song");
+            return 'next';
+        }
+
+    // Change the volume
     } else {
-        $(TEXT_SELECTOR).text("Playing Previous Song ");
-        return 'previous';
+        var volumeUp = gesture.direction[1] > 0;
+
+        if (volumeUp) {
+            $(TEXT_SELECTOR).text("Raising the Volume");
+            return 'previous';
+        } else {
+            $(TEXT_SELECTOR).text("Lowering the Volume");
+            return 'next';
+        }
     }
+    
 }
 
 /**
