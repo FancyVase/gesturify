@@ -1,9 +1,9 @@
 // Setting up global variables
 var play = false;
-var prevPlayPauseGestureTime = new Date().getTime();
 var prevGesture;
+var prevGestureTime = new Date().getTime();
 var circleGestureDuration = 0;
-var prevCircleGestureTime = prevPlayPauseGestureTime;
+var prevCircleGestureTime = new Date().getTime();
 var addToPlaylistMode = false;
 
 // Selectors
@@ -11,9 +11,8 @@ const TEXT_SELECTOR = '#gesture-text';
 const MENU_SELECTOR = '.menu.listings';
 const PLAYLIST_ITEM_SELECTOR = '.playlist-item';
 const CURSOR_SELECTOR = '.circle.icon';
+const GESTURE_DELAY = 1000; // in milliseconds
 
-// TODO: Severity: High
-// Ensure that there is a delay between recognized gestures, maybe 3 seconds?
 // TODO: Severity: Medium
 // Add shuffling (so-so gesture). Challenging to determine.
 
@@ -28,73 +27,76 @@ $(document).ready(function () {
 
     Leap.loop(controllerOptions, function (frame) {
         const numHands = frame.hands.length;
+        var currentTime = new Date().getTime();
 
-        // reset text
-        if (numHands == 0) {
-            $(TEXT_SELECTOR).text('');
-        }
-        else if (numHands == 1) {
-            var hand = frame.hands[0];
-            var currentTime = new Date().getTime();
-
-            if (addToPlaylistMode) {
-
-                selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight);
-
-            } else {
-
-                resetPlaylistAppearance();
-                resetCursor();
-
-                // Detect Play/ Pause Gesture
-                if (detectPlayPauseGesture(hand) && currentTime - prevPlayPauseGestureTime >= 3500) {
-                    if (play) {
-                        $(TEXT_SELECTOR).text('Pause');
-                        setTimeout(() => $(TEXT_SELECTOR).text(''), 1500);
-                    } else {
-                        $(TEXT_SELECTOR).text('Play');
-                        setTimeout(() => $(TEXT_SELECTOR).text(''), 1500);
-                    }
-                    play = !play;
-                    prevPlayPauseGestureTime = new Date().getTime();
-                    prevGesture = 'halt';
-                    circleGestureDuration = 0;
-                }
-
-                // Detect Save to Library Gesture
-                else if (detectThumbsUpGesture(hand)) {
-                    $(TEXT_SELECTOR).text('Saved to Library!');
-                    setTimeout(() => $(TEXT_SELECTOR).text(''), 1500);
-                }
-
-                // Detect Search Gesture
-                else if (detectFistGesture(hand)) {
-                    $(TEXT_SELECTOR).text('Searching...');
-                    setTimeout(() => $(TEXT_SELECTOR).text(''), 1500);
-                }
-
-                else if (frame.valid && frame.gestures.length > 0) {
-                    frame.gestures.forEach(function (gesture) {
-                        switch (gesture.type) {
-                            // Detect Fast Forward/ Rewind Gesture
-                            case "circle":
-                                prevGesture = seek(frame, gesture, circleGestureDuration, currentTime);
-                                prevCircleGestureTime = new Date().getTime();
-                                console.log("Circle Gesture");
-                                break;
-                            // Detect Song Skipping or Volume Control (Swipe Gesture)
-                            case "swipe":
-                                prevGesture = swipe(frame, gesture, currentTime);
-                                console.log("Swipe Gesture");
-                                break;
-                        }
-                    });
-                }
+        if (currentTime - prevGestureTime > GESTURE_DELAY) {
+            // reset text
+            if (numHands == 0) {
+                $(TEXT_SELECTOR).text('');
             }
-        } else {
-            // warn user
-            $(TEXT_SELECTOR).text("Only use one hand!");
+            else if (numHands == 1) {
+                var hand = frame.hands[0];
+
+
+                if (addToPlaylistMode) {
+
+                    selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight);
+
+                } else {
+
+                    resetPlaylistAppearance();
+                    resetCursor();
+
+                    // Detect Play/ Pause Gesture
+                    if (detectPlayPauseGesture(hand)) {
+                        if (play) {
+                            $(TEXT_SELECTOR).text('Pause');
+                            resetDelay();
+                        } else {
+                            $(TEXT_SELECTOR).text('Play');
+                            resetDelay();
+                        }
+                        play = !play;
+                        prevGesture = 'halt';
+                    }
+
+                    // Detect Save to Library Gesture
+                    else if (detectThumbsUpGesture(hand)) {
+                        $(TEXT_SELECTOR).text('Saved to Library!');
+                        resetDelay();
+                    }
+
+                    // Detect Search Gesture
+                    else if (detectFistGesture(hand)) {
+                        $(TEXT_SELECTOR).text('Searching...');
+                        resetDelay();
+                    }
+
+                    else if (frame.valid && frame.gestures.length > 0) {
+                        frame.gestures.forEach(function (gesture) {
+                            switch (gesture.type) {
+                                // Detect Fast Forward/ Rewind Gesture
+                                case "circle":
+                                    prevGesture = seek(frame, gesture, circleGestureDuration, currentTime);
+                                    prevCircleGestureTime = new Date().getTime();
+                                    console.log("Circle Gesture");
+                                    break;
+                                // Detect Song Skipping or Volume Control (Swipe Gesture)
+                                case "swipe":
+                                    prevGesture = swipe(frame, gesture);
+                                    console.log("Swipe Gesture");
+                                    break;
+                            }
+                        });
+                    }
+                }
+            } else {
+                // warn user
+                $(TEXT_SELECTOR).text("Only use one hand!");
+            }
         }
+
+        
     }).use('screenPosition', { scale: 0.5 });
 });
 
@@ -145,10 +147,10 @@ function seek(frame, gesture, duration, currentTime) {
  * A swipe down lowers the volume.
  * @param {Frame} frame The current frame given by the Leap Motion controller.
  * @param {CircleGesture} gesture The gesture object representing a hand swipe.
- * @param {number} currentTime The time the current gesture was made, in milliseconds.
  */
-function swipe(frame, gesture, currentTime) {
+function swipe(frame, gesture) {
     var isHorizontal = Math.abs(gesture.direction[0]) > Math.abs(gesture.direction[1]);
+    var prevGesture = '';
 
     // Change the track
     if (isHorizontal) {
@@ -156,10 +158,10 @@ function swipe(frame, gesture, currentTime) {
 
         if (previous) {
             $(TEXT_SELECTOR).text("Playing Previous Song");
-            return 'previous';
+            prevGesture = 'previous';
         } else {
             $(TEXT_SELECTOR).text("Playing Next Song");
-            return 'next';
+            prevGesture = 'next';
         }
 
     // Change the volume
@@ -168,12 +170,15 @@ function swipe(frame, gesture, currentTime) {
 
         if (volumeUp) {
             $(TEXT_SELECTOR).text("Raising the Volume");
-            return 'previous';
+            prevGesture = 'previous';
         } else {
             $(TEXT_SELECTOR).text("Lowering the Volume");
-            return 'next';
+            prevGesture = 'next';
         }
     }
+
+    prevGestureTime = new Date().getTime();
+    return prevGesture;
     
 }
 
@@ -232,6 +237,13 @@ function convertDuration(duration) {
     if (minutes < 10) { minutes = "0" + minutes; }
     if (seconds < 10) { seconds = "0" + seconds; }
     return `${hours}:${minutes}:${seconds}`;
+}
+
+/**
+ * Resets delay after a gesture has been detected.
+ */
+function resetDelay() {
+    prevGestureTime = new Date().getTime();
 }
 
 /**
