@@ -15,6 +15,7 @@ const PLAYLIST_ITEM_SELECTOR = '.playlist-item';
 const CURSOR_SELECTOR = '.circle.icon';
 
 $(document).ready(function () {
+  // Getting values for playlist task
   var listingsTopPos = $(MENU_SELECTOR).offset().top;
   var listingsHeight = $(MENU_SELECTOR).outerHeight();
   var itemHeight = $(PLAYLIST_ITEM_SELECTOR).outerHeight();
@@ -32,6 +33,7 @@ $(document).ready(function () {
       $(TEXT_SELECTOR).text('');
       resetCircleDuration();
     }
+    // recognize one-handed gestures
     else if (numHands == 1) {
       var hand = frame.hands[0];
 
@@ -50,21 +52,21 @@ $(document).ready(function () {
             var gestureText = play ? 'Pause' : 'Play';
             $(TEXT_SELECTOR).text(gestureText);
             play = !play;
-            resetAllTime();
+            updateTextAndTime();
             prevGesture = 'halt';
           }
 
           // Detect Search Gesture
           else if (detectFistGesture(hand)) {
             $(TEXT_SELECTOR).text('Search');
-            resetAllTime();
+            updateTextAndTime();
             prevGesture = 'search';
           }
 
           // Detect Save to Library Gesture
           else if (detectThumbsUpGesture(hand)) {
             $(TEXT_SELECTOR).text('Saved to Library!');
-            resetAllTime();
+            updateTextAndTime();
             prevGesture = 'save';
           }
 
@@ -78,6 +80,7 @@ $(document).ready(function () {
                   console.log("Circle Gesture");
                   break;
                 case "swipe":
+                  // Detect Change Volume/ Change Track Gesture
                   swipe(gesture);
                   console.log("Swipe Gesture");
                   break;
@@ -85,7 +88,7 @@ $(document).ready(function () {
             });
           }
         } else if ((currentTime - prevCircleGestureTime > 500) && CIRLCE_GESTURES.indexOf(prevGesture) > 0) {
-          resetAllTime();
+          updateTextAndTime();
         }
       }
     } else {
@@ -276,16 +279,26 @@ function selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight) {
   }
 }
 
-function resetAllTime() {
+/**
+ * Resets the presentation text and circle gesture duration time.
+ * Records the time of the last recognized gesture.
+ */
+function updateTextAndTime() {
   updatePrevGestureTime();
   resetCircleDuration();
   resetText();
 }
 
+/**
+ * Records the time of the last recognized gesture.
+ */
 function updatePrevGestureTime() {
   prevGestureTime = new Date().getTime();
 }
 
+/**
+ * Resets the total time taken to complete a circle gesture.
+ */
 function resetCircleDuration() {
   circleGestureDuration = 0;
 }
@@ -304,6 +317,9 @@ function resetCursor() {
   $(CURSOR_SELECTOR).css({ top: '0px', right: '0%' });
 }
 
+/**
+ * Resets the presentation text.
+ */
 function resetText() {
   setTimeout(() => $(TEXT_SELECTOR).text(''), 1750);
 }
