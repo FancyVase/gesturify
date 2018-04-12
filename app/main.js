@@ -6,7 +6,7 @@ var circleGestureDuration = 0;
 var prevCircleGestureTime = prevGestureTime;
 var addToPlaylistMode = false;
 const GESTURE_DELAY = 2000;
-const CIRLCE_GESTURES = ["forward", "reverse"];
+const CIRCLE_GESTURES = ["forward", "reverse"];
 
 // Selectors
 const TEXT_SELECTOR = '#gesture-text';
@@ -87,7 +87,7 @@ $(document).ready(function () {
               }
             });
           }
-        } else if ((currentTime - prevCircleGestureTime > 500) && CIRLCE_GESTURES.indexOf(prevGesture) > 0) {
+        } else if ((currentTime - prevCircleGestureTime > 500) && CIRCLE_GESTURES.indexOf(prevGesture) > 0) {
           updateTextAndTime();
         }
       }
