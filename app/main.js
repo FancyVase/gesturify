@@ -76,7 +76,6 @@ $(document).ready(function () {
                 // Detect Fast Forward/ Rewind Gesture
                 case "circle":
                   seek(frame, gesture, circleGestureDuration, currentTime);
-                  resetText();
                   console.log("Circle Gesture");
                   break;
                 case "swipe":
