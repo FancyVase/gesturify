@@ -5,8 +5,12 @@ var prevGesture;
 var circleGestureDuration = 0;
 var prevCircleGestureTime = prevGestureTime;
 var addToPlaylistMode = false;
+
+// Constants
 const GESTURE_DELAY = 2000;
 const CIRCLE_GESTURES = ["forward", "reverse"];
+// Get token from: https://beta.developer.spotify.com/documentation/web-playback-sdk/quick-start/
+const SPOTIFY_TOKEN = "your_token_goes_here"
 
 // Selectors
 const TEXT_SELECTOR = '#gesture-text';
@@ -14,7 +18,30 @@ const MENU_SELECTOR = '.menu.listings';
 const PLAYLIST_ITEM_SELECTOR = '.playlist-item';
 const CURSOR_SELECTOR = '.circle.icon';
 
-$(document).ready(function () {
+window.onSpotifyWebPlaybackSDKReady = () => {
+  const token = SPOTIFY_TOKEN;
+  const player = new Spotify.Player({
+    name: 'Gesturify',
+    getOAuthToken: cb => { cb(token); }
+  });
+
+  // Error handling
+  player.addListener('initialization_error', ({ message }) => { console.error(message); });
+  player.addListener('authentication_error', ({ message }) => { console.error(message); });
+  player.addListener('account_error', ({ message }) => { console.error(message); });
+  player.addListener('playback_error', ({ message }) => { console.error(message); });
+
+  // Playback status updates
+  player.addListener('player_state_changed', state => { console.log(state); });
+
+  // Ready
+  player.addListener('ready', ({ device_id }) => {
+    console.log('Ready with Device ID', device_id);
+  });
+
+  // Connect to the player!
+  player.connect();
+
   // Getting values for playlist task
   var listingsTopPos = $(MENU_SELECTOR).offset().top;
   var listingsHeight = $(MENU_SELECTOR).outerHeight();
@@ -49,8 +76,19 @@ $(document).ready(function () {
         if (currentTime - prevGestureTime >= GESTURE_DELAY) {
           // Detect Play/ Pause Gesture
           if (detectPlayPauseGesture(hand)) {
+            if (play) {
+              player.pause().then(() => {
+                console.log('Paused!');
+              });
+            } else {
+              player.resume().then(() => {
+                console.log('Resumed!');
+              });
+            }
+
             var gestureText = play ? 'Pause' : 'Play';
             $(TEXT_SELECTOR).text(gestureText);
+
             play = !play;
             updateTextAndTime();
             prevGesture = 'halt';
@@ -96,7 +134,11 @@ $(document).ready(function () {
       resetCircleDuration();
     }
   }).use('screenPosition', { scale: 0.5 });
-});
+};
+
+// $(document).ready(function () {
+  
+// });
 
 /**
  * Determines the duration and direction to seek a song.
