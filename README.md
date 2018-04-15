@@ -13,4 +13,7 @@ You can obtain an access token from the [Spotify Web Playback SDK Quick Start](h
 |----------------------|-----------------------|
 | Fast Forward/ Rewind | Rotate the tip of the finger in the clockwise direction to fast forward the song, anti-clockwise to rewind. |
 | Play/ Pause          | Extend the hand out to play/ pause the current song if paused/ playing. |
-| Save Current Song | Make thumbs up gesture to save the current song to the user's library. |
+| Save Current Song    | Make thumbs up gesture to save the current song to the user's library. |
+| Next/ Previous Song  | Swipe to the left to skip to the next song or to the right to skip to the previous song. |
+| Volume Control       | Swipe up to raise the volume or down to lower it. |
+| Search               | Make a fist gesture to search Spotify. |
