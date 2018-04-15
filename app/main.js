@@ -136,10 +136,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
   }).use('screenPosition', { scale: 0.5 });
 };
 
-// $(document).ready(function () {
-  
-// });
-
 /**
  * Determines the duration and direction to seek a song.
  * The clockwise motion of the finger indicates fast forward.
