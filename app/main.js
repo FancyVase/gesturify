@@ -43,6 +43,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     // reset text
     if (numHands == 0) {
       $(TEXT_SELECTOR).text('');
+      resetCircleDuration(player, circleGestureDuration);
     }
 
     // recognize one-handed gestures
@@ -72,37 +73,45 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             }
 
             play = !play;
-            updateTextAndTime();
+
+            updateTextAndTime(player, circleGestureDuration);
+            prevGesture = 'toggle-play';
           }
           else if (frame.valid && frame.gestures.length > 0) {
             frame.gestures.forEach(function (gesture) {
               switch (gesture.type) {
                 case "circle":
+                  playerSeek(frame, gesture, circleGestureDuration, currentTime, player);
                   break;
                 case "swipe":
                   // Detect Change Volume/ Change Track Gesture
-                  const previous = swipe(gesture);
-                  if (previous) {
-                    player.previousTrack().then(() => {
-                      $(TEXT_SELECTOR).text("Play Previous Song");
-                      updateTextAndTime();
-                    });
-                  } else {
-                    player.nextTrack().then(() => {
-                      $(TEXT_SELECTOR).text("Play Next Song");
-                      updateTextAndTime();
-                    });
-                  }
-                  console.log("Swipe Gesture");
+                  // const previous = swipe(gesture);
+                  // if (previous) {
+                  //   player.previousTrack().then(() => {
+                  //     $(TEXT_SELECTOR).text("Play Previous Song");
+                  //     updateTextAndTime(player, circleGestureDuration);
+                  //     prevGesture = 'change-track';
+                  //   });
+                  // } else {
+                  //   player.nextTrack().then(() => {
+                  //     $(TEXT_SELECTOR).text("Play Next Song");
+                  //     updateTextAndTime(player, circleGestureDuration);
+                  //     prevGesture = 'change-track';
+                  //   });
+                  // }
+                  // console.log("Swipe Gesture");
                   break;
               }
             });
           }
+        } else if ((currentTime - prevCircleGestureTime > GESTURE_DELAY) && CIRCLE_GESTURES.indexOf(prevGesture) > 0) {
+          updateTextAndTime(player, circleGestureDuration);
         }
       }
     } else {
       // warn user
       $(TEXT_SELECTOR).text("Only use one hand!");
+      resetCircleDuration(player, circleGestureDuration);
     }
   }).use('screenPosition', { scale: 0.5 });
 };
@@ -118,7 +127,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
  * @param {number} duration The total time taken for the gesture, in seconds.
  * @param {number} currentTime The time the current gesture was made, in milliseconds.
  */
-function seek(frame, gesture, duration, currentTime) {
+function playerSeek(frame, gesture, duration, currentTime, player) {
+  //TODO: https://beta.developer.spotify.com/documentation/web-playback-sdk/reference/#api-spotify-player-seek
+
+
   var clockwise = false;
   var pointableID = gesture.pointableIds[0];
   var direction = frame.pointable(pointableID).direction;
@@ -131,10 +143,10 @@ function seek(frame, gesture, duration, currentTime) {
   // - the time between detected circle gestures is greater than 500ms
   // - the direction of the previous circle gesture is not the same as the current circle gesture
 
-  if (currentTime - prevCircleGestureTime > 500 || prevGesture === "forward" && !clockwise || prevGesture === "reverse" && clockwise) {
-    resetCircleDuration();
+  if (currentTime - prevCircleGestureTime > 500 || prevGesture === "forward" && !clockwise || prevGesture === "reverse" && clockwise || CIRCLE_GESTURES.indexOf(prevGesture) < 0) {
+    resetCircleDuration(player, duration);
   }
-  circleGestureDuration += 0.5;
+  circleGestureDuration += 1;
 
   if (clockwise) {
     $(TEXT_SELECTOR).text("Fast Forward Song by " + convertDuration(duration));
@@ -167,6 +179,7 @@ function swipe(gesture) {
 
   // Change the volume
   // TODO: use position and prevPosition to get magnitude
+  // https://beta.developer.spotify.com/documentation/web-playback-sdk/reference/#api-spotify-player-getvolume
 
 
   // else {
@@ -286,8 +299,9 @@ function selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight) {
  * Resets the presentation text and circle gesture duration time.
  * Records the time of the last recognized gesture.
  */
-function updateTextAndTime() {
+function updateTextAndTime(player, duration) {
   updatePrevGestureTime();
+  resetCircleDuration(player, duration);
   resetText();
 }
 
@@ -301,8 +315,27 @@ function updatePrevGestureTime() {
 /**
  * Resets the total time taken to complete a circle gesture.
  */
-function resetCircleDuration() {
+function resetCircleDuration(player, duration) {
+  player.getCurrentState().then(state => {
+    if (!state || duration === 0) {
+      return;
+    }
+    const songPosition = state.position;
+    const seekTime =  duration * 1000;
+    if (prevGesture === 'forward') {
+      player.seek(songPosition + seekTime).then(() => {
+        console.log(`Changed position by ${seekTime}!`);
+      });
+    } else if (prevGesture === 'reverse') {
+      player.seek(songPosition - seekTime).then(() => {
+        console.log(`Changed position by -${seekTime}!`);
+      });
+    }
+  });
+
+
   circleGestureDuration = 0;
+  prevGesture = '';
 }
 
 /**
