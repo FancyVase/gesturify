@@ -29,6 +29,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
   const player = setUpPlayer();
 
+  // Retrive current track details
   player.on('player_state_changed', ({ paused, track_window: { current_track: { name, artists } } }) => {
     play = !paused;
     $(SONG_TEXT_SELECTOR).text(name);
@@ -49,18 +50,15 @@ window.onSpotifyWebPlaybackSDKReady = () => {
       var hand = frame.hands[0];
 
       if (addToPlaylistMode) {
-
         selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight);
-
-      }
-
-      else {
+      } else {
 
         resetPlaylistAppearance();
         resetCursor();
 
         if (currentTime - prevGestureTime >= GESTURE_DELAY) {
 
+          // Detect Volume Gesture
           if (changeVolumeMode) {
             if (frame.valid && frame.gestures.length > 0) {
               frame.gestures.forEach(function (gesture) {
@@ -68,7 +66,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                   case "circle":
                     break;
                   case "swipe":
-                    // Change Track Gesture
                     const volumeUp = detectChangeVolumeDirection(gesture);
                     if (volumeUp) {
                       player.setVolume(1).then(() => {
@@ -107,6 +104,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
               frame.gestures.forEach(function (gesture) {
                 switch (gesture.type) {
                   case "circle":
+                  // Detect Seek Gesture
                     const clockwise = detectCircleDirection(frame, gesture);
                     player.getCurrentState().then(state => {
                       if (!state) {
@@ -127,7 +125,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     });
                     break;
                   case "swipe":
-                    // Change Track Gesture
+                    // Detect Track Gesture
                     const previous = detectChangeTrackDirection(gesture);
                     if (previous) {
                       player.previousTrack().then(() => {
@@ -157,15 +155,12 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 };
 
 /**
- * Determines the duration and direction to seek a song.
- * The clockwise motion of the finger indicates fast forward.
- * The other direction indicates rewind.
- * The duration of the gesture corresponds to how much the song should be fast forwarded/
- * rewinded
+ * Determines if a song should be fast-forwarded/ rewinded.
+ * The clockwise motion of the finger indicates fast forward. Otherwise, rewind.
  * @param {Frame} frame The current frame given by the Leap Motion controller.
  * @param {CircleGesture} gesture The gesture object representing a circular finger movement.
- * @param {number} duration The total time taken for the gesture, in seconds.
- * @param {number} currentTime The time the current gesture was made, in milliseconds.
+ * @returns True if clockwise circle gesture, False otherwise.
+ * 
  */
 function detectCircleDirection(frame, gesture) {
   var pointableID = gesture.pointableIds[0];
@@ -176,20 +171,24 @@ function detectCircleDirection(frame, gesture) {
 }
 
 /**
- * Determines what kind of swipe was made.
- * A horizontal swipe changes the track.
- * A swipe to the left indicates skip to the next track.
- * A swipe to the right indicates skip to the previous track.
- * A vertical swipe changes the volume.
- * A swipe up raises the volume.
- * A swipe down lowers the volume.
+ * Determines if the next/ previous song should play.
+ * A horizontal swipe to the left indicates skip to the next track.
+ * A horizontal swipe to the right indicates skip to the previous track.
  * @param {SwipeGesture} gesture The gesture object representing a hand swipe.
+ * @returns True if horizontal left gesture, False otherwise.
  */
 function detectChangeTrackDirection(gesture) {
   var isHorizontal = Math.abs(gesture.direction[0]) > Math.abs(gesture.direction[1]);
   return isHorizontal && gesture.direction[0] > 0;
 }
 
+/**
+ * Determines if the volume should be increased/ decreased.
+ * An upwards swipe indicates that the volume should be increased.
+ * An downwards swipe indicates that the volume should be decreased.
+ * @param {SwipeGesture} gesture The gesture object representing a hand swipe.
+ * @returns True if vertical upwards gesture, False otherwise.
+ */
 function detectChangeVolumeDirection(gesture) {
   // TODO: use position and prevPosition to get magnitude
   var isHorizontal = Math.abs(gesture.direction[0]) > Math.abs(gesture.direction[1]);
@@ -238,22 +237,6 @@ function detectFistGesture(hand) {
 }
 
 /**
- * Converts seconds to a string of format HH:MM:SS
- * @param {number} duration The elapsed duration of the circle gesture up to the frame containing this gesture, in seconds.
- * @returns The corresponding time in string format HH:MM:SS
- */
-function convertDuration(duration) {
-  var hours = Math.floor(duration / 3600);
-  var minutes = Math.floor((duration - (hours * 3600)) / 60);
-  var seconds = Math.ceil(duration - (hours * 3600) - (minutes * 60));
-
-  if (hours < 10) { hours = "0" + hours; }
-  if (minutes < 10) { minutes = "0" + minutes; }
-  if (seconds < 10) { seconds = "0" + seconds; }
-  return `${hours}:${minutes}:${seconds}`;
-}
-
-/**
  * Toggles between the ability to select a playlist or make gestures to control the player.
  */
 function togglePlaylistMode() {
@@ -272,6 +255,9 @@ function togglePlaylistMode() {
   addToPlaylistMode = !addToPlaylistMode;
 }
 
+/**
+ * Toggles between the ability to change the volume of the player.
+ */
 function toggleVolumeMode() {
   if (!addToPlaylistMode) {
     if (changeVolumeMode) {
@@ -318,8 +304,7 @@ function selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight) {
 }
 
 /**
- * Resets the presentation text and circle gesture duration time.
- * Records the time of the last recognized gesture.
+ * Resets the presentation text and records the time of the last recognized gesture.
  */
 function updateTextAndTime() {
   updatePrevGestureTime();
