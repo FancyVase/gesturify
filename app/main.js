@@ -9,8 +9,6 @@ var addToPlaylistMode = false;
 // Constants
 const GESTURE_DELAY = 2000;
 const CIRCLE_GESTURES = ["forward", "reverse"];
-// Get token from: https://beta.developer.spotify.com/documentation/web-playback-sdk/quick-start/
-const SPOTIFY_TOKEN = "your_token_goes_here"
 
 // Selectors
 const TEXT_SELECTOR = '#gesture-text';
@@ -18,38 +16,17 @@ const MENU_SELECTOR = '.menu.listings';
 const PLAYLIST_ITEM_SELECTOR = '.playlist-item';
 const CURSOR_SELECTOR = '.circle.icon';
 
+// Controller options for the Leap Motion
+const controllerOptions = { enableGestures: true, background: true };
+
 window.onSpotifyWebPlaybackSDKReady = () => {
-  const token = SPOTIFY_TOKEN;
-  const player = new Spotify.Player({
-    name: 'Gesturify',
-    getOAuthToken: cb => { cb(token); }
-  });
-
-  // Error handling
-  player.addListener('initialization_error', ({ message }) => { console.error(message); });
-  player.addListener('authentication_error', ({ message }) => { console.error(message); });
-  player.addListener('account_error', ({ message }) => { console.error(message); });
-  player.addListener('playback_error', ({ message }) => { console.error(message); });
-
-  // Playback status updates
-  player.addListener('player_state_changed', state => { console.log(state); });
-
-  // Ready
-  player.addListener('ready', ({ device_id }) => {
-    console.log('Ready with Device ID', device_id);
-  });
-
-  // Connect to the player!
-  player.connect();
-
   // Getting values for playlist task
-  var listingsTopPos = $(MENU_SELECTOR).offset().top;
-  var listingsHeight = $(MENU_SELECTOR).outerHeight();
-  var itemHeight = $(PLAYLIST_ITEM_SELECTOR).outerHeight();
-  var numItems = $(PLAYLIST_ITEM_SELECTOR).length;
+  const listingsTopPos = $(MENU_SELECTOR).offset().top;
+  const listingsHeight = $(MENU_SELECTOR).outerHeight();
+  const itemHeight = $(PLAYLIST_ITEM_SELECTOR).outerHeight();
+  const numItems = $(PLAYLIST_ITEM_SELECTOR).length;
 
-  // Controller options for the Leap Motion
-  var controllerOptions = { enableGestures: true, background: true };
+  const player = setUpPlayer();
 
   Leap.loop(controllerOptions, function (frame) {
     const numHands = frame.hands.length;
