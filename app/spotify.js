@@ -1,5 +1,5 @@
 // Get token from: https://beta.developer.spotify.com/documentation/web-playback-sdk/quick-start/
-const SPOTIFY_TOKEN = "BQBfRXTMCYtO0iZGY2yrN91MPFozzRj_sUn0uqSkhpHhL6EH5BENQFa302Ut5kRnm_HJ0kgShgH_aRUfMMYH-c7mmodVy6tUG3cYUladgDybFPiQrgldQESP9Em87NYlrWyRE2FUoSpmwAopGqblXssKGEuxSt3L_VU";
+const SPOTIFY_TOKEN = "BQCiggQ55xCTJBZuMjfYuJbl9bqDJnJEiXo78eJRQAUVeTaHTj_1C2Bhfd6DgL5T-8bBk992tIR40CglUdNZhRWgr9lQTYnjrrUQFx0XkPWKt7rsdlTap7ioqmiAZ5gW-CWuuxUj0-hoKXtBhB0TpbxwAqIvntGbD9I";
 function setUpPlayer() {
     const player = new Spotify.Player({
         name: 'Gesturify',
@@ -25,24 +25,3 @@ function setUpPlayer() {
 
     return player;
 }
-
-
-const saveSong = ({
-    spotify_id,
-    playerInstance: {
-        _options: {
-            getOAuthToken
-        }
-    }
-}) => {
-    getOAuthToken(access_token => {
-        fetch(`https://api.spotify.com/v1/me/tracks`, {
-            method: 'PUT',
-            body: JSON.stringify({ ids: [spotify_id] }),
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${access_token}`
-            },
-        });
-    });
-};

@@ -1,15 +1,12 @@
 // Setting up global variables
 let play;
-let trackId;
 var prevGestureTime = new Date().getTime();
-var prevGesture;
-var circleGestureDuration = 0;
-var prevCircleGestureTime = prevGestureTime;
 var addToPlaylistMode = false;
 
 // Constants
-const GESTURE_DELAY = 2000;
-const CIRCLE_GESTURES = ["forward", "reverse"];
+const MS_TO_S = 1000;
+const GESTURE_DELAY = 2 * MS_TO_S;
+const SEEK_TIME = 10 * MS_TO_S;
 
 // Selectors
 const TEXT_SELECTOR = '#gesture-text';
@@ -31,11 +28,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
   const player = setUpPlayer();
 
-  player.on('player_state_changed', ({ paused, track_window: { current_track: { name, artists, id } } }) => {
+  player.on('player_state_changed', ({ paused, track_window: { current_track: { name, artists } } }) => {
     play = !paused;
     $(SONG_TEXT_SELECTOR).text(name);
     $(ARTIST_TEXT_SELECTOR).text(artists[0].name);
-    trackId = id;
   });
 
   Leap.loop(controllerOptions, function (frame) {
@@ -45,7 +41,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     // reset text
     if (numHands == 0) {
       $(TEXT_SELECTOR).text('');
-      //resetCircleDuration(player, circleGestureDuration)
     }
 
     // recognize one-handed gestures
@@ -75,57 +70,55 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             }
 
             play = !play;
-
-            updateTextAndTime(player, circleGestureDuration);
-            prevGesture = 'toggle-play';
-          }
-
-          // Detect Save to Library Gesture
-          else if (detectThumbsUpGesture(hand)) {
-            saveSong({
-              playerInstance: player,
-              spotify_id: trackId,
-            });
-            $(TEXT_SELECTOR).text('Saved to Library!');
             updateTextAndTime();
-            prevGesture = 'save';
           }
-          // else if (frame.valid && frame.gestures.length > 0) {
-          //   frame.gestures.forEach(function (gesture) {
-          //     switch (gesture.type) {
-          //       case "circle":
-          //         playerSeek(frame, gesture, circleGestureDuration, currentTime, player);
-          //         break;
-          //       case "swipe":
-          //         // Detect Change Volume/ Change Track Gesture
-          //         // const previous = swipe(gesture);
-          //         // if (previous) {
-          //         //   player.previousTrack().then(() => {
-          //         //     $(TEXT_SELECTOR).text("Play Previous Song");
-          //         //     updateTextAndTime(player, circleGestureDuration);
-          //         //     prevGesture = 'change-track';
-          //         //   });
-          //         // } else {
-          //         //   player.nextTrack().then(() => {
-          //         //     $(TEXT_SELECTOR).text("Play Next Song");
-          //         //     updateTextAndTime(player, circleGestureDuration);
-          //         //     prevGesture = 'change-track';
-          //         //   });
-          //         // }
-          //         // console.log("Swipe Gesture");
-          //         break;
-          //     }
-          //   });
-          // }
+          else if (frame.valid && frame.gestures.length > 0) {
+            frame.gestures.forEach(function (gesture) {
+              switch (gesture.type) {
+                case "circle":
+                  const clockwise = detectCircleDirection(frame, gesture);
+                  player.getCurrentState().then(state => {
+                    if (!state) {
+                      return;
+                    }
+                    const songPosition = state.position;
+                    if (clockwise) {
+                      player.seek(songPosition + SEEK_TIME).then(() => {
+                        $(TEXT_SELECTOR).text("Fast Forward Song");
+                        console.log(`Changed position by ${SEEK_TIME}!`);
+                      });
+                    } else {
+                      player.seek(songPosition - SEEK_TIME).then(() => {
+                        $(TEXT_SELECTOR).text("Rewind Song");
+                        console.log(`Changed position by -${SEEK_TIME}!`);
+                      });
+                    }
+                  });
+                  break;
+                case "swipe":
+                  // Change Track Gesture
+                  const previous = swipe(gesture);
+                  if (previous) {
+                    player.previousTrack().then(() => {
+                      $(TEXT_SELECTOR).text("Play Previous Song");
+                      updateTextAndTime();
+                    });
+                  } else {
+                    player.nextTrack().then(() => {
+                      $(TEXT_SELECTOR).text("Play Next Song");
+                      updateTextAndTime();
+                    });
+                  }
+                  console.log("Swipe Gesture");
+                  break;
+              }
+            });
+          }
         }
-        // else if ((currentTime - prevCircleGestureTime > GESTURE_DELAY) && CIRCLE_GESTURES.indexOf(prevGesture) > 0) {
-        //   updateTextAndTime(player, circleGestureDuration);
-        // }
       }
     } else {
       // warn user
       $(TEXT_SELECTOR).text("Only use one hand!");
-      //resetCircleDuration(player, circleGestureDuration)
     }
   }).use('screenPosition', { scale: 0.5 });
 };
@@ -141,36 +134,12 @@ window.onSpotifyWebPlaybackSDKReady = () => {
  * @param {number} duration The total time taken for the gesture, in seconds.
  * @param {number} currentTime The time the current gesture was made, in milliseconds.
  */
-function playerSeek(frame, gesture, duration, currentTime, player) {
-  //TODO: https://beta.developer.spotify.com/documentation/web-playback-sdk/reference/#api-spotify-player-seek
-
-
-  var clockwise = false;
+function detectCircleDirection(frame, gesture) {
   var pointableID = gesture.pointableIds[0];
   var direction = frame.pointable(pointableID).direction;
   var dotProduct = Leap.vec3.dot(direction, gesture.normal);
 
-  if (dotProduct > 0) clockwise = true;
-
-  // Reset total time taken to complete circle gesture.
-  // The circle gesture is considered complete if:
-  // - the time between detected circle gestures is greater than 500ms
-  // - the direction of the previous circle gesture is not the same as the current circle gesture
-
-  if (currentTime - prevCircleGestureTime > 500 || prevGesture === "forward" && !clockwise || prevGesture === "reverse" && clockwise || CIRCLE_GESTURES.indexOf(prevGesture) < 0) {
-    resetCircleDuration(player, duration);
-  }
-  circleGestureDuration += 1;
-
-  if (clockwise) {
-    $(TEXT_SELECTOR).text("Fast Forward Song by " + convertDuration(duration));
-    prevGesture = 'forward';
-  } else {
-    $(TEXT_SELECTOR).text("Rewind Song by " + convertDuration(duration));
-    prevGesture = 'reverse';
-  }
-
-  prevCircleGestureTime = new Date().getTime();
+  return dotProduct > 0;
 }
 
 /**
@@ -193,7 +162,6 @@ function swipe(gesture) {
 
   // Change the volume
   // TODO: use position and prevPosition to get magnitude
-  // https://beta.developer.spotify.com/documentation/web-playback-sdk/reference/#api-spotify-player-getvolume
 
 
   // else {
@@ -313,9 +281,8 @@ function selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight) {
  * Resets the presentation text and circle gesture duration time.
  * Records the time of the last recognized gesture.
  */
-function updateTextAndTime(player, duration) {
+function updateTextAndTime() {
   updatePrevGestureTime();
-  //resetCircleDuration(player, duration);
   resetText();
 }
 
@@ -324,32 +291,6 @@ function updateTextAndTime(player, duration) {
  */
 function updatePrevGestureTime() {
   prevGestureTime = new Date().getTime();
-}
-
-/**
- * Resets the total time taken to complete a circle gesture.
- */
-function resetCircleDuration(player, duration) {
-  player.getCurrentState().then(state => {
-    if (!state || duration === 0) {
-      return;
-    }
-    const songPosition = state.position;
-    const seekTime = duration * 1000;
-    if (prevGesture === 'forward') {
-      player.seek(songPosition + seekTime).then(() => {
-        console.log(`Changed position by ${seekTime}!`);
-      });
-    } else if (prevGesture === 'reverse') {
-      player.seek(songPosition - seekTime).then(() => {
-        console.log(`Changed position by -${seekTime}!`);
-      });
-    }
-  });
-
-
-  circleGestureDuration = 0;
-  prevGesture = '';
 }
 
 /**
