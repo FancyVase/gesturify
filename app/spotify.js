@@ -1,6 +1,5 @@
 // Get token from: https://beta.developer.spotify.com/documentation/web-playback-sdk/quick-start/
-const SPOTIFY_TOKEN = "BQAU_8xSP6248GCJNvNnIUZIOydStLxEGfYMAdwc7kjab6_KYOXVALoE328kLuTumcdNMKyhBTYyM5mgByCkEeOL7LHIebdePZ_k-dcYSn5bmJjx1wwPot4BbemHFit1uwQMh0wuy0cJd676B9JPWxCuWUgRBMH7K9E";
-
+const SPOTIFY_TOKEN = "BQBWygevudZK5jql7keeOZgKCwU201VivLk01ineXhrt7hKCL3yITEvm8bvrA164xFpPr3McJj1Ckjj3ShhAQyAPue94w0LUNrK_7AKvh_2h_ndzWEHyvln_k037-svNs2L0YrdJF9pF11xZRPDOp20epTQnESyeIDQ";
 function setUpPlayer() {
     const player = new Spotify.Player({
         name: 'Gesturify',

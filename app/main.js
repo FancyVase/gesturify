@@ -1,5 +1,5 @@
 // Setting up global variables
-var play = false;
+let play;
 var prevGestureTime = new Date().getTime();
 var prevGesture;
 var circleGestureDuration = 0;
@@ -15,6 +15,8 @@ const TEXT_SELECTOR = '#gesture-text';
 const MENU_SELECTOR = '.menu.listings';
 const PLAYLIST_ITEM_SELECTOR = '.playlist-item';
 const CURSOR_SELECTOR = '.circle.icon';
+const SONG_TEXT_SELECTOR = '#song-title';
+const ARTIST_TEXT_SELECTOR = '#artist';
 
 // Controller options for the Leap Motion
 const controllerOptions = { enableGestures: true, background: true };
@@ -28,6 +30,12 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
   const player = setUpPlayer();
 
+  player.on('player_state_changed', ({ paused, track_window: { current_track: { name, artists } } }) => {
+    play = !paused;
+    $(SONG_TEXT_SELECTOR).text(name);
+    $(ARTIST_TEXT_SELECTOR).text(artists[0].name);
+  });
+
   Leap.loop(controllerOptions, function (frame) {
     const numHands = frame.hands.length;
     var currentTime = new Date().getTime();
@@ -35,8 +43,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     // reset text
     if (numHands == 0) {
       $(TEXT_SELECTOR).text('');
-      resetCircleDuration();
     }
+
     // recognize one-handed gestures
     else if (numHands == 1) {
       var hand = frame.hands[0];
@@ -55,60 +63,46 @@ window.onSpotifyWebPlaybackSDKReady = () => {
           if (detectPlayPauseGesture(hand)) {
             if (play) {
               player.pause().then(() => {
-                console.log('Paused!');
+                $(TEXT_SELECTOR).text('Pause');
               });
             } else {
               player.resume().then(() => {
-                console.log('Resumed!');
+                $(TEXT_SELECTOR).text('Play');
               });
             }
 
-            var gestureText = play ? 'Pause' : 'Play';
-            $(TEXT_SELECTOR).text(gestureText);
-
             play = !play;
             updateTextAndTime();
-            prevGesture = 'halt';
           }
-
-          // Detect Search Gesture
-          else if (detectFistGesture(hand)) {
-            $(TEXT_SELECTOR).text('Search');
-            updateTextAndTime();
-            prevGesture = 'search';
-          }
-
-          // Detect Save to Library Gesture
-          else if (detectThumbsUpGesture(hand)) {
-            $(TEXT_SELECTOR).text('Saved to Library!');
-            updateTextAndTime();
-            prevGesture = 'save';
-          }
-
           else if (frame.valid && frame.gestures.length > 0) {
             frame.gestures.forEach(function (gesture) {
               switch (gesture.type) {
-                // Detect Fast Forward/ Rewind Gesture
                 case "circle":
-                  seek(frame, gesture, circleGestureDuration, currentTime);
-                  console.log("Circle Gesture");
                   break;
                 case "swipe":
                   // Detect Change Volume/ Change Track Gesture
-                  swipe(gesture);
+                  const previous = swipe(gesture);
+                  if (previous) {
+                    player.previousTrack().then(() => {
+                      $(TEXT_SELECTOR).text("Play Previous Song");
+                      updateTextAndTime();
+                    });
+                  } else {
+                    player.nextTrack().then(() => {
+                      $(TEXT_SELECTOR).text("Play Next Song");
+                      updateTextAndTime();
+                    });
+                  }
                   console.log("Swipe Gesture");
                   break;
               }
             });
           }
-        } else if ((currentTime - prevCircleGestureTime > 500) && CIRCLE_GESTURES.indexOf(prevGesture) > 0) {
-          updateTextAndTime();
         }
       }
     } else {
       // warn user
       $(TEXT_SELECTOR).text("Only use one hand!");
-      resetCircleDuration();
     }
   }).use('screenPosition', { scale: 0.5 });
 };
@@ -167,30 +161,25 @@ function swipe(gesture) {
   var isHorizontal = Math.abs(gesture.direction[0]) > Math.abs(gesture.direction[1]);
 
   // Change the track
-  if (isHorizontal) {
-    var previous = gesture.direction[0] > 0;
+  return isHorizontal && gesture.direction[0] > 0;
 
-    if (previous) {
-      $(TEXT_SELECTOR).text("Play Previous Song");
-      prevGesture = 'previous';
-    } else {
-      $(TEXT_SELECTOR).text("Play Next Song");
-      prevGesture = 'next';
-    }
 
-    // Change the volume
-    // TODO: use position and prevPosition to get magnitude
-  } else {
-    var volumeUp = gesture.direction[1] > 0;
 
-    if (volumeUp) {
-      $(TEXT_SELECTOR).text("Raise the Volume");
-      prevGesture = 'previous';
-    } else {
-      $(TEXT_SELECTOR).text("Lower the Volume");
-      prevGesture = 'next';
-    }
-  }
+  // Change the volume
+  // TODO: use position and prevPosition to get magnitude
+
+
+  // else {
+  //   var volumeUp = gesture.direction[1] > 0;
+
+  //   if (volumeUp) {
+  //     $(TEXT_SELECTOR).text("Raise the Volume");
+  //     prevGesture = 'previous';
+  //   } else {
+  //     $(TEXT_SELECTOR).text("Lower the Volume");
+  //     prevGesture = 'next';
+  //   }
+  // }
 }
 
 /**
@@ -299,7 +288,6 @@ function selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight) {
  */
 function updateTextAndTime() {
   updatePrevGestureTime();
-  resetCircleDuration();
   resetText();
 }
 
