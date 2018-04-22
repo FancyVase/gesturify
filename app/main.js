@@ -1,5 +1,6 @@
 // Setting up global variables
 let play;
+let trackId;
 var prevGestureTime = new Date().getTime();
 var prevGesture;
 var circleGestureDuration = 0;
@@ -30,10 +31,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
   const player = setUpPlayer();
 
-  player.on('player_state_changed', ({ paused, track_window: { current_track: { name, artists } } }) => {
+  player.on('player_state_changed', ({ paused, track_window: { current_track: { name, artists, id } } }) => {
     play = !paused;
     $(SONG_TEXT_SELECTOR).text(name);
     $(ARTIST_TEXT_SELECTOR).text(artists[0].name);
+    trackId = id;
   });
 
   Leap.loop(controllerOptions, function (frame) {
@@ -43,7 +45,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     // reset text
     if (numHands == 0) {
       $(TEXT_SELECTOR).text('');
-      resetCircleDuration(player, circleGestureDuration);
+      //resetCircleDuration(player, circleGestureDuration)
     }
 
     // recognize one-handed gestures
@@ -77,41 +79,53 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             updateTextAndTime(player, circleGestureDuration);
             prevGesture = 'toggle-play';
           }
-          else if (frame.valid && frame.gestures.length > 0) {
-            frame.gestures.forEach(function (gesture) {
-              switch (gesture.type) {
-                case "circle":
-                  playerSeek(frame, gesture, circleGestureDuration, currentTime, player);
-                  break;
-                case "swipe":
-                  // Detect Change Volume/ Change Track Gesture
-                  // const previous = swipe(gesture);
-                  // if (previous) {
-                  //   player.previousTrack().then(() => {
-                  //     $(TEXT_SELECTOR).text("Play Previous Song");
-                  //     updateTextAndTime(player, circleGestureDuration);
-                  //     prevGesture = 'change-track';
-                  //   });
-                  // } else {
-                  //   player.nextTrack().then(() => {
-                  //     $(TEXT_SELECTOR).text("Play Next Song");
-                  //     updateTextAndTime(player, circleGestureDuration);
-                  //     prevGesture = 'change-track';
-                  //   });
-                  // }
-                  // console.log("Swipe Gesture");
-                  break;
-              }
+
+          // Detect Save to Library Gesture
+          else if (detectThumbsUpGesture(hand)) {
+            saveSong({
+              playerInstance: player,
+              spotify_id: trackId,
             });
+            $(TEXT_SELECTOR).text('Saved to Library!');
+            updateTextAndTime();
+            prevGesture = 'save';
           }
-        } else if ((currentTime - prevCircleGestureTime > GESTURE_DELAY) && CIRCLE_GESTURES.indexOf(prevGesture) > 0) {
-          updateTextAndTime(player, circleGestureDuration);
+          // else if (frame.valid && frame.gestures.length > 0) {
+          //   frame.gestures.forEach(function (gesture) {
+          //     switch (gesture.type) {
+          //       case "circle":
+          //         playerSeek(frame, gesture, circleGestureDuration, currentTime, player);
+          //         break;
+          //       case "swipe":
+          //         // Detect Change Volume/ Change Track Gesture
+          //         // const previous = swipe(gesture);
+          //         // if (previous) {
+          //         //   player.previousTrack().then(() => {
+          //         //     $(TEXT_SELECTOR).text("Play Previous Song");
+          //         //     updateTextAndTime(player, circleGestureDuration);
+          //         //     prevGesture = 'change-track';
+          //         //   });
+          //         // } else {
+          //         //   player.nextTrack().then(() => {
+          //         //     $(TEXT_SELECTOR).text("Play Next Song");
+          //         //     updateTextAndTime(player, circleGestureDuration);
+          //         //     prevGesture = 'change-track';
+          //         //   });
+          //         // }
+          //         // console.log("Swipe Gesture");
+          //         break;
+          //     }
+          //   });
+          // }
         }
+        // else if ((currentTime - prevCircleGestureTime > GESTURE_DELAY) && CIRCLE_GESTURES.indexOf(prevGesture) > 0) {
+        //   updateTextAndTime(player, circleGestureDuration);
+        // }
       }
     } else {
       // warn user
       $(TEXT_SELECTOR).text("Only use one hand!");
-      resetCircleDuration(player, circleGestureDuration);
+      //resetCircleDuration(player, circleGestureDuration)
     }
   }).use('screenPosition', { scale: 0.5 });
 };
@@ -301,7 +315,7 @@ function selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight) {
  */
 function updateTextAndTime(player, duration) {
   updatePrevGestureTime();
-  resetCircleDuration(player, duration);
+  //resetCircleDuration(player, duration);
   resetText();
 }
 
@@ -321,7 +335,7 @@ function resetCircleDuration(player, duration) {
       return;
     }
     const songPosition = state.position;
-    const seekTime =  duration * 1000;
+    const seekTime = duration * 1000;
     if (prevGesture === 'forward') {
       player.seek(songPosition + seekTime).then(() => {
         console.log(`Changed position by ${seekTime}!`);
