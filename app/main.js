@@ -2,6 +2,7 @@
 let play;
 var prevGestureTime = new Date().getTime();
 var addToPlaylistMode = false;
+var changeVolumeMode = false;
 
 // Constants
 const MS_TO_S = 1000;
@@ -51,69 +52,101 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
         selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight);
 
-      } else {
+      }
+
+      else {
 
         resetPlaylistAppearance();
         resetCursor();
 
         if (currentTime - prevGestureTime >= GESTURE_DELAY) {
-          // Detect Play/ Pause Gesture
-          if (detectPlayPauseGesture(hand)) {
-            if (play) {
-              player.pause().then(() => {
-                $(TEXT_SELECTOR).text('Pause');
-              });
-            } else {
-              player.resume().then(() => {
-                $(TEXT_SELECTOR).text('Play');
+
+          if (changeVolumeMode) {
+            if (frame.valid && frame.gestures.length > 0) {
+              frame.gestures.forEach(function (gesture) {
+                switch (gesture.type) {
+                  case "circle":
+                    break;
+                  case "swipe":
+                    // Change Track Gesture
+                    const volumeUp = detectChangeVolumeDirection(gesture);
+                    if (volumeUp) {
+                      player.setVolume(1).then(() => {
+                        $(TEXT_SELECTOR).text("Raise the Volume");
+                        updateTextAndTime();
+                      });
+                    } else {
+                      player.setVolume(0.25).then(() => {
+                        $(TEXT_SELECTOR).text("Lower the Volume");
+                        updateTextAndTime();
+                      });
+                    }
+                    console.log("Swipe Gesture");
+                    break;
+                }
               });
             }
 
-            play = !play;
-            updateTextAndTime();
-          }
-          else if (frame.valid && frame.gestures.length > 0) {
-            frame.gestures.forEach(function (gesture) {
-              switch (gesture.type) {
-                case "circle":
-                  const clockwise = detectCircleDirection(frame, gesture);
-                  player.getCurrentState().then(state => {
-                    if (!state) {
-                      return;
-                    }
-                    const songPosition = state.position;
-                    if (clockwise) {
-                      player.seek(songPosition + SEEK_TIME).then(() => {
-                        $(TEXT_SELECTOR).text("Fast Forward Song");
-                        console.log(`Changed position by ${SEEK_TIME}!`);
+          } else {
+            // Detect Play/ Pause Gesture
+            if (detectPlayPauseGesture(hand)) {
+              if (play) {
+                player.pause().then(() => {
+                  $(TEXT_SELECTOR).text('Pause');
+                });
+              } else {
+                player.resume().then(() => {
+                  $(TEXT_SELECTOR).text('Play');
+                });
+              }
+
+              play = !play;
+              updateTextAndTime();
+            }
+            else if (frame.valid && frame.gestures.length > 0) {
+              frame.gestures.forEach(function (gesture) {
+                switch (gesture.type) {
+                  case "circle":
+                    const clockwise = detectCircleDirection(frame, gesture);
+                    player.getCurrentState().then(state => {
+                      if (!state) {
+                        return;
+                      }
+                      const songPosition = state.position;
+                      if (clockwise) {
+                        player.seek(songPosition + SEEK_TIME).then(() => {
+                          $(TEXT_SELECTOR).text("Fast Forward Song");
+                          console.log(`Changed position by ${SEEK_TIME}!`);
+                        });
+                      } else {
+                        player.seek(songPosition - SEEK_TIME).then(() => {
+                          $(TEXT_SELECTOR).text("Rewind Song");
+                          console.log(`Changed position by -${SEEK_TIME}!`);
+                        });
+                      }
+                    });
+                    break;
+                  case "swipe":
+                    // Change Track Gesture
+                    const previous = detectChangeTrackDirection(gesture);
+                    if (previous) {
+                      player.previousTrack().then(() => {
+                        $(TEXT_SELECTOR).text("Play Previous Song");
+                        updateTextAndTime();
                       });
                     } else {
-                      player.seek(songPosition - SEEK_TIME).then(() => {
-                        $(TEXT_SELECTOR).text("Rewind Song");
-                        console.log(`Changed position by -${SEEK_TIME}!`);
+                      player.nextTrack().then(() => {
+                        $(TEXT_SELECTOR).text("Play Next Song");
+                        updateTextAndTime();
                       });
                     }
-                  });
-                  break;
-                case "swipe":
-                  // Change Track Gesture
-                  const previous = swipe(gesture);
-                  if (previous) {
-                    player.previousTrack().then(() => {
-                      $(TEXT_SELECTOR).text("Play Previous Song");
-                      updateTextAndTime();
-                    });
-                  } else {
-                    player.nextTrack().then(() => {
-                      $(TEXT_SELECTOR).text("Play Next Song");
-                      updateTextAndTime();
-                    });
-                  }
-                  console.log("Swipe Gesture");
-                  break;
-              }
-            });
+                    console.log("Swipe Gesture");
+                    break;
+                }
+              });
+            }
           }
+
         }
       }
     } else {
@@ -152,29 +185,15 @@ function detectCircleDirection(frame, gesture) {
  * A swipe down lowers the volume.
  * @param {SwipeGesture} gesture The gesture object representing a hand swipe.
  */
-function swipe(gesture) {
+function detectChangeTrackDirection(gesture) {
   var isHorizontal = Math.abs(gesture.direction[0]) > Math.abs(gesture.direction[1]);
-
-  // Change the track
   return isHorizontal && gesture.direction[0] > 0;
+}
 
-
-
-  // Change the volume
+function detectChangeVolumeDirection(gesture) {
   // TODO: use position and prevPosition to get magnitude
-
-
-  // else {
-  //   var volumeUp = gesture.direction[1] > 0;
-
-  //   if (volumeUp) {
-  //     $(TEXT_SELECTOR).text("Raise the Volume");
-  //     prevGesture = 'previous';
-  //   } else {
-  //     $(TEXT_SELECTOR).text("Lower the Volume");
-  //     prevGesture = 'next';
-  //   }
-  // }
+  var isHorizontal = Math.abs(gesture.direction[0]) > Math.abs(gesture.direction[1]);
+  return !isHorizontal && gesture.direction[1] > 0;
 }
 
 /**
@@ -238,14 +257,35 @@ function convertDuration(duration) {
  * Toggles between the ability to select a playlist or make gestures to control the player.
  */
 function togglePlaylistMode() {
-  if (addToPlaylistMode) {
-    $('.ui.left.attached.button').removeClass('disabled');
-    $('.ui.right.attached.button').addClass('disabled');
-  } else {
-    $('.ui.left.attached.button').addClass('disabled');
-    $('.ui.right.attached.button').removeClass('disabled');
+  if (!changeVolumeMode) {
+    if (addToPlaylistMode) {
+      $('.ui.left.attached.button.playlist').removeClass('disabled');
+      $('.ui.left.attached.button.volume').removeClass('disabled');
+      $('.ui.right.attached.button.playlist').addClass('disabled');
+    } else {
+      $('.ui.left.attached.button.playlist').addClass('disabled');
+      $('.ui.left.attached.button.volume').addClass('disabled');
+      $('.ui.right.attached.button.playlist').removeClass('disabled');
+      $('.ui.right.attached.button.volume').addClass('disabled');
+    }
   }
   addToPlaylistMode = !addToPlaylistMode;
+}
+
+function toggleVolumeMode() {
+  if (!addToPlaylistMode) {
+    if (changeVolumeMode) {
+      $('.ui.left.attached.button.volume').removeClass('disabled');
+      $('.ui.left.attached.button.playlist').removeClass('disabled');
+      $('.ui.right.attached.button.volume').addClass('disabled');
+    } else {
+      $('.ui.left.attached.button.playlist').addClass('disabled');
+      $('.ui.left.attached.button.volume').addClass('disabled');
+      $('.ui.right.attached.button.volume').removeClass('disabled');
+      $('.ui.right.attached.button.playlist').addClass('disabled');
+    }
+  }
+  changeVolumeMode = !changeVolumeMode;
 }
 
 /**
