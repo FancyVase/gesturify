@@ -1,55 +1,40 @@
 // Setting up global variables
-var play = false;
+let play;
 var prevGestureTime = new Date().getTime();
-var prevGesture;
-var circleGestureDuration = 0;
-var prevCircleGestureTime = prevGestureTime;
 var addToPlaylistMode = false;
+var changeVolumeMode = false;
 
 // Constants
-const GESTURE_DELAY = 2000;
-const CIRCLE_GESTURES = ["forward", "reverse"];
-// Get token from: https://beta.developer.spotify.com/documentation/web-playback-sdk/quick-start/
-const SPOTIFY_TOKEN = "your_token_goes_here"
+const MS_TO_S = 1000;
+const GESTURE_DELAY = 2 * MS_TO_S;
+const SEEK_TIME = 10 * MS_TO_S;
 
 // Selectors
 const TEXT_SELECTOR = '#gesture-text';
 const MENU_SELECTOR = '.menu.listings';
 const PLAYLIST_ITEM_SELECTOR = '.playlist-item';
 const CURSOR_SELECTOR = '.circle.icon';
+const SONG_TEXT_SELECTOR = '#song-title';
+const ARTIST_TEXT_SELECTOR = '#artist';
+
+// Controller options for the Leap Motion
+const controllerOptions = { enableGestures: true, background: true };
 
 window.onSpotifyWebPlaybackSDKReady = () => {
-  const token = SPOTIFY_TOKEN;
-  const player = new Spotify.Player({
-    name: 'Gesturify',
-    getOAuthToken: cb => { cb(token); }
-  });
-
-  // Error handling
-  player.addListener('initialization_error', ({ message }) => { console.error(message); });
-  player.addListener('authentication_error', ({ message }) => { console.error(message); });
-  player.addListener('account_error', ({ message }) => { console.error(message); });
-  player.addListener('playback_error', ({ message }) => { console.error(message); });
-
-  // Playback status updates
-  player.addListener('player_state_changed', state => { console.log(state); });
-
-  // Ready
-  player.addListener('ready', ({ device_id }) => {
-    console.log('Ready with Device ID', device_id);
-  });
-
-  // Connect to the player!
-  player.connect();
-
   // Getting values for playlist task
-  var listingsTopPos = $(MENU_SELECTOR).offset().top;
-  var listingsHeight = $(MENU_SELECTOR).outerHeight();
-  var itemHeight = $(PLAYLIST_ITEM_SELECTOR).outerHeight();
-  var numItems = $(PLAYLIST_ITEM_SELECTOR).length;
+  const listingsTopPos = $(MENU_SELECTOR).offset().top;
+  const listingsHeight = $(MENU_SELECTOR).outerHeight();
+  const itemHeight = $(PLAYLIST_ITEM_SELECTOR).outerHeight();
+  const numItems = $(PLAYLIST_ITEM_SELECTOR).length;
 
-  // Controller options for the Leap Motion
-  var controllerOptions = { enableGestures: true, background: true };
+  const player = setUpPlayer();
+
+  // Retrive current track details
+  player.on('player_state_changed', ({ paused, track_window: { current_track: { name, artists } } }) => {
+    play = !paused;
+    $(SONG_TEXT_SELECTOR).text(name);
+    $(ARTIST_TEXT_SELECTOR).text(artists[0].name);
+  });
 
   Leap.loop(controllerOptions, function (frame) {
     const numHands = frame.hands.length;
@@ -58,162 +43,156 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     // reset text
     if (numHands == 0) {
       $(TEXT_SELECTOR).text('');
-      resetCircleDuration();
     }
+
     // recognize one-handed gestures
     else if (numHands == 1) {
       var hand = frame.hands[0];
 
       if (addToPlaylistMode) {
-
         selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight);
-
       } else {
 
         resetPlaylistAppearance();
         resetCursor();
 
         if (currentTime - prevGestureTime >= GESTURE_DELAY) {
-          // Detect Play/ Pause Gesture
-          if (detectPlayPauseGesture(hand)) {
-            if (play) {
-              player.pause().then(() => {
-                console.log('Paused!');
-              });
-            } else {
-              player.resume().then(() => {
-                console.log('Resumed!');
+
+          // Detect Volume Gesture
+          if (changeVolumeMode) {
+            if (frame.valid && frame.gestures.length > 0) {
+              frame.gestures.forEach(function (gesture) {
+                switch (gesture.type) {
+                  case "circle":
+                    break;
+                  case "swipe":
+                    const volumeUp = detectChangeVolumeDirection(gesture);
+                    if (volumeUp) {
+                      player.setVolume(1).then(() => {
+                        $(TEXT_SELECTOR).text("Raise the Volume");
+                        updateTextAndTime();
+                      });
+                    } else {
+                      player.setVolume(0.25).then(() => {
+                        $(TEXT_SELECTOR).text("Lower the Volume");
+                        updateTextAndTime();
+                      });
+                    }
+                    console.log("Swipe Gesture");
+                    break;
+                }
               });
             }
 
-            var gestureText = play ? 'Pause' : 'Play';
-            $(TEXT_SELECTOR).text(gestureText);
-
-            play = !play;
-            updateTextAndTime();
-            prevGesture = 'halt';
-          }
-
-          // Detect Search Gesture
-          else if (detectFistGesture(hand)) {
-            $(TEXT_SELECTOR).text('Search');
-            updateTextAndTime();
-            prevGesture = 'search';
-          }
-
-          // Detect Save to Library Gesture
-          else if (detectThumbsUpGesture(hand)) {
-            $(TEXT_SELECTOR).text('Saved to Library!');
-            updateTextAndTime();
-            prevGesture = 'save';
-          }
-
-          else if (frame.valid && frame.gestures.length > 0) {
-            frame.gestures.forEach(function (gesture) {
-              switch (gesture.type) {
-                // Detect Fast Forward/ Rewind Gesture
-                case "circle":
-                  seek(frame, gesture, circleGestureDuration, currentTime);
-                  console.log("Circle Gesture");
-                  break;
-                case "swipe":
-                  // Detect Change Volume/ Change Track Gesture
-                  swipe(gesture);
-                  console.log("Swipe Gesture");
-                  break;
+          } else {
+            // Detect Play/ Pause Gesture
+            if (detectPlayPauseGesture(hand)) {
+              if (play) {
+                player.pause().then(() => {
+                  $(TEXT_SELECTOR).text('Pause');
+                });
+              } else {
+                player.resume().then(() => {
+                  $(TEXT_SELECTOR).text('Play');
+                });
               }
-            });
+
+              play = !play;
+              updateTextAndTime();
+            }
+            else if (frame.valid && frame.gestures.length > 0) {
+              frame.gestures.forEach(function (gesture) {
+                switch (gesture.type) {
+                  case "circle":
+                  // Detect Seek Gesture
+                    const clockwise = detectCircleDirection(frame, gesture);
+                    player.getCurrentState().then(state => {
+                      if (!state) {
+                        return;
+                      }
+                      const songPosition = state.position;
+                      if (clockwise) {
+                        player.seek(songPosition + SEEK_TIME).then(() => {
+                          $(TEXT_SELECTOR).text("Fast Forward Song");
+                          console.log(`Changed position by ${SEEK_TIME}!`);
+                        });
+                      } else {
+                        player.seek(songPosition - SEEK_TIME).then(() => {
+                          $(TEXT_SELECTOR).text("Rewind Song");
+                          console.log(`Changed position by -${SEEK_TIME}!`);
+                        });
+                      }
+                    });
+                    break;
+                  case "swipe":
+                    // Detect Track Gesture
+                    const previous = detectChangeTrackDirection(gesture);
+                    if (previous) {
+                      player.previousTrack().then(() => {
+                        $(TEXT_SELECTOR).text("Play Previous Song");
+                        updateTextAndTime();
+                      });
+                    } else {
+                      player.nextTrack().then(() => {
+                        $(TEXT_SELECTOR).text("Play Next Song");
+                        updateTextAndTime();
+                      });
+                    }
+                    console.log("Swipe Gesture");
+                    break;
+                }
+              });
+            }
           }
-        } else if ((currentTime - prevCircleGestureTime > 500) && CIRCLE_GESTURES.indexOf(prevGesture) > 0) {
-          updateTextAndTime();
+
         }
       }
     } else {
       // warn user
       $(TEXT_SELECTOR).text("Only use one hand!");
-      resetCircleDuration();
     }
   }).use('screenPosition', { scale: 0.5 });
 };
 
 /**
- * Determines the duration and direction to seek a song.
- * The clockwise motion of the finger indicates fast forward.
- * The other direction indicates rewind.
- * The duration of the gesture corresponds to how much the song should be fast forwarded/
- * rewinded
+ * Determines if a song should be fast-forwarded/ rewinded.
+ * The clockwise motion of the finger indicates fast forward. Otherwise, rewind.
  * @param {Frame} frame The current frame given by the Leap Motion controller.
  * @param {CircleGesture} gesture The gesture object representing a circular finger movement.
- * @param {number} duration The total time taken for the gesture, in seconds.
- * @param {number} currentTime The time the current gesture was made, in milliseconds.
+ * @returns True if clockwise circle gesture, False otherwise.
+ * 
  */
-function seek(frame, gesture, duration, currentTime) {
-  var clockwise = false;
+function detectCircleDirection(frame, gesture) {
   var pointableID = gesture.pointableIds[0];
   var direction = frame.pointable(pointableID).direction;
   var dotProduct = Leap.vec3.dot(direction, gesture.normal);
 
-  if (dotProduct > 0) clockwise = true;
-
-  // Reset total time taken to complete circle gesture.
-  // The circle gesture is considered complete if:
-  // - the time between detected circle gestures is greater than 500ms
-  // - the direction of the previous circle gesture is not the same as the current circle gesture
-
-  if (currentTime - prevCircleGestureTime > 500 || prevGesture === "forward" && !clockwise || prevGesture === "reverse" && clockwise) {
-    resetCircleDuration();
-  }
-  circleGestureDuration += 0.5;
-
-  if (clockwise) {
-    $(TEXT_SELECTOR).text("Fast Forward Song by " + convertDuration(duration));
-    prevGesture = 'forward';
-  } else {
-    $(TEXT_SELECTOR).text("Rewind Song by " + convertDuration(duration));
-    prevGesture = 'reverse';
-  }
-
-  prevCircleGestureTime = new Date().getTime();
+  return dotProduct > 0;
 }
 
 /**
- * Determines what kind of swipe was made.
- * A horizontal swipe changes the track.
- * A swipe to the left indicates skip to the next track.
- * A swipe to the right indicates skip to the previous track.
- * A vertical swipe changes the volume.
- * A swipe up raises the volume.
- * A swipe down lowers the volume.
+ * Determines if the next/ previous song should play.
+ * A horizontal swipe to the left indicates skip to the next track.
+ * A horizontal swipe to the right indicates skip to the previous track.
  * @param {SwipeGesture} gesture The gesture object representing a hand swipe.
+ * @returns True if horizontal left gesture, False otherwise.
  */
-function swipe(gesture) {
+function detectChangeTrackDirection(gesture) {
   var isHorizontal = Math.abs(gesture.direction[0]) > Math.abs(gesture.direction[1]);
+  return isHorizontal && gesture.direction[0] > 0;
+}
 
-  // Change the track
-  if (isHorizontal) {
-    var previous = gesture.direction[0] > 0;
-
-    if (previous) {
-      $(TEXT_SELECTOR).text("Play Previous Song");
-      prevGesture = 'previous';
-    } else {
-      $(TEXT_SELECTOR).text("Play Next Song");
-      prevGesture = 'next';
-    }
-
-    // Change the volume
-    // TODO: use position and prevPosition to get magnitude
-  } else {
-    var volumeUp = gesture.direction[1] > 0;
-
-    if (volumeUp) {
-      $(TEXT_SELECTOR).text("Raise the Volume");
-      prevGesture = 'previous';
-    } else {
-      $(TEXT_SELECTOR).text("Lower the Volume");
-      prevGesture = 'next';
-    }
-  }
+/**
+ * Determines if the volume should be increased/ decreased.
+ * An upwards swipe indicates that the volume should be increased.
+ * An downwards swipe indicates that the volume should be decreased.
+ * @param {SwipeGesture} gesture The gesture object representing a hand swipe.
+ * @returns True if vertical upwards gesture, False otherwise.
+ */
+function detectChangeVolumeDirection(gesture) {
+  // TODO: use position and prevPosition to get magnitude
+  var isHorizontal = Math.abs(gesture.direction[0]) > Math.abs(gesture.direction[1]);
+  return !isHorizontal && gesture.direction[1] > 0;
 }
 
 /**
@@ -258,33 +237,41 @@ function detectFistGesture(hand) {
 }
 
 /**
- * Converts seconds to a string of format HH:MM:SS
- * @param {number} duration The elapsed duration of the circle gesture up to the frame containing this gesture, in seconds.
- * @returns The corresponding time in string format HH:MM:SS
- */
-function convertDuration(duration) {
-  var hours = Math.floor(duration / 3600);
-  var minutes = Math.floor((duration - (hours * 3600)) / 60);
-  var seconds = Math.ceil(duration - (hours * 3600) - (minutes * 60));
-
-  if (hours < 10) { hours = "0" + hours; }
-  if (minutes < 10) { minutes = "0" + minutes; }
-  if (seconds < 10) { seconds = "0" + seconds; }
-  return `${hours}:${minutes}:${seconds}`;
-}
-
-/**
  * Toggles between the ability to select a playlist or make gestures to control the player.
  */
 function togglePlaylistMode() {
-  if (addToPlaylistMode) {
-    $('.ui.left.attached.button').removeClass('disabled');
-    $('.ui.right.attached.button').addClass('disabled');
-  } else {
-    $('.ui.left.attached.button').addClass('disabled');
-    $('.ui.right.attached.button').removeClass('disabled');
+  if (!changeVolumeMode) {
+    if (addToPlaylistMode) {
+      $('.ui.left.attached.button.playlist').removeClass('disabled');
+      $('.ui.left.attached.button.volume').removeClass('disabled');
+      $('.ui.right.attached.button.playlist').addClass('disabled');
+    } else {
+      $('.ui.left.attached.button.playlist').addClass('disabled');
+      $('.ui.left.attached.button.volume').addClass('disabled');
+      $('.ui.right.attached.button.playlist').removeClass('disabled');
+      $('.ui.right.attached.button.volume').addClass('disabled');
+    }
   }
   addToPlaylistMode = !addToPlaylistMode;
+}
+
+/**
+ * Toggles between the ability to change the volume of the player.
+ */
+function toggleVolumeMode() {
+  if (!addToPlaylistMode) {
+    if (changeVolumeMode) {
+      $('.ui.left.attached.button.volume').removeClass('disabled');
+      $('.ui.left.attached.button.playlist').removeClass('disabled');
+      $('.ui.right.attached.button.volume').addClass('disabled');
+    } else {
+      $('.ui.left.attached.button.playlist').addClass('disabled');
+      $('.ui.left.attached.button.volume').addClass('disabled');
+      $('.ui.right.attached.button.volume').removeClass('disabled');
+      $('.ui.right.attached.button.playlist').addClass('disabled');
+    }
+  }
+  changeVolumeMode = !changeVolumeMode;
 }
 
 /**
@@ -317,12 +304,10 @@ function selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight) {
 }
 
 /**
- * Resets the presentation text and circle gesture duration time.
- * Records the time of the last recognized gesture.
+ * Resets the presentation text and records the time of the last recognized gesture.
  */
 function updateTextAndTime() {
   updatePrevGestureTime();
-  resetCircleDuration();
   resetText();
 }
 
@@ -331,13 +316,6 @@ function updateTextAndTime() {
  */
 function updatePrevGestureTime() {
   prevGestureTime = new Date().getTime();
-}
-
-/**
- * Resets the total time taken to complete a circle gesture.
- */
-function resetCircleDuration() {
-  circleGestureDuration = 0;
 }
 
 /**

@@ -32,6 +32,7 @@
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
 
     <!-- App code -->
+    <script type="text/javascript" src="app/spotify.js"></script>
     <script type="text/javascript" src="app/main.js"></script>
 </head>
 
@@ -68,8 +69,12 @@
                 </div>
             </div>
             <div class="ui buttons">
-                <button class="ui left attached button" onclick="togglePlaylistMode()">Add to Playlist</button>
-                <button class="ui right attached button disabled" onclick="togglePlaylistMode()">Control Player</button>
+                <button class="ui left attached button playlist" onclick="togglePlaylistMode()">Add to Playlist</button>
+                <button class="ui right attached button playlist disabled" onclick="togglePlaylistMode()">Control Player</button>
+            </div>
+            <div class="ui buttons">
+                <button class="ui left attached button volume" onclick="toggleVolumeMode()">Change Volume</button>
+                <button class="ui right attached button volume disabled" onclick="toggleVolumeMode()">Control Player</button>
             </div>
         </div>
 
@@ -83,6 +88,14 @@
                 <div class="row">
                     <div class="column">
                         <div id="gesture-text"></div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="column">
+                        <div id="song-text">Current track:
+                            <span id="song-title"></span>
+                        </div>
+                        <div id="artist"></div>
                     </div>
                 </div>
             </div>

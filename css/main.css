@@ -35,6 +35,13 @@ body {
     font-size: 100px;
     line-height: 150%;
 }
+
+.pusher .ui.grid .row .column #song-text, #artist {
+    text-align: center;
+    position: 'relative';
+    margin-left: 20%;
+}
+
 .circle.icon {
     position: absolute;
     top: 0px;
