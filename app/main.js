@@ -8,6 +8,8 @@ var changeVolumeMode = false;
 const MS_TO_S = 1000;
 const GESTURE_DELAY = 2 * MS_TO_S;
 const SEEK_TIME = 10 * MS_TO_S;
+const VOLUME_MAX_POS = -200;
+const VOLUME_MIN_POS = 400;
 
 // Selectors
 const TEXT_SELECTOR = '#gesture-text';
@@ -51,100 +53,73 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
       if (addToPlaylistMode) {
         selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight);
+      } else if (changeVolumeMode) {
+        changeVolume(hand, player);
       } else {
-
         resetPlaylistAppearance();
         resetCursor();
 
+        // Delay gesture recognition
         if (currentTime - prevGestureTime >= GESTURE_DELAY) {
 
-          // Detect Volume Gesture
-          if (changeVolumeMode) {
-            if (frame.valid && frame.gestures.length > 0) {
-              frame.gestures.forEach(function (gesture) {
-                switch (gesture.type) {
-                  case "circle":
-                    break;
-                  case "swipe":
-                    const volumeUp = detectChangeVolumeDirection(gesture);
-                    if (volumeUp) {
-                      player.setVolume(1).then(() => {
-                        $(TEXT_SELECTOR).text("Raise the Volume");
-                        updateTextAndTime();
-                      });
-                    } else {
-                      player.setVolume(0.25).then(() => {
-                        $(TEXT_SELECTOR).text("Lower the Volume");
-                        updateTextAndTime();
-                      });
-                    }
-                    console.log("Swipe Gesture");
-                    break;
-                }
+          // Detect Play/ Pause Gesture
+          if (detectPlayPauseGesture(hand)) {
+            if (play) {
+              player.pause().then(() => {
+                $(TEXT_SELECTOR).text('Pause');
+              });
+            } else {
+              player.resume().then(() => {
+                $(TEXT_SELECTOR).text('Play');
               });
             }
 
-          } else {
-            // Detect Play/ Pause Gesture
-            if (detectPlayPauseGesture(hand)) {
-              if (play) {
-                player.pause().then(() => {
-                  $(TEXT_SELECTOR).text('Pause');
-                });
-              } else {
-                player.resume().then(() => {
-                  $(TEXT_SELECTOR).text('Play');
-                });
-              }
-
-              play = !play;
-              updateTextAndTime();
-            }
-            else if (frame.valid && frame.gestures.length > 0) {
-              frame.gestures.forEach(function (gesture) {
-                switch (gesture.type) {
-                  case "circle":
-                  // Detect Seek Gesture
-                    const clockwise = detectCircleDirection(frame, gesture);
-                    player.getCurrentState().then(state => {
-                      if (!state) {
-                        return;
-                      }
-                      const songPosition = state.position;
-                      if (clockwise) {
-                        player.seek(songPosition + SEEK_TIME).then(() => {
-                          $(TEXT_SELECTOR).text("Fast Forward Song");
-                          console.log(`Changed position by ${SEEK_TIME}!`);
-                        });
-                      } else {
-                        player.seek(songPosition - SEEK_TIME).then(() => {
-                          $(TEXT_SELECTOR).text("Rewind Song");
-                          console.log(`Changed position by -${SEEK_TIME}!`);
-                        });
-                      }
-                    });
-                    break;
-                  case "swipe":
-                    // Detect Track Gesture
-                    const previous = detectChangeTrackDirection(gesture);
-                    if (previous) {
-                      player.previousTrack().then(() => {
-                        $(TEXT_SELECTOR).text("Play Previous Song");
-                        updateTextAndTime();
-                      });
-                    } else {
-                      player.nextTrack().then(() => {
-                        $(TEXT_SELECTOR).text("Play Next Song");
-                        updateTextAndTime();
-                      });
-                    }
-                    console.log("Swipe Gesture");
-                    break;
-                }
-              });
-            }
+            play = !play;
+            updateTextAndTime();
           }
-
+          else if (frame.valid && frame.gestures.length > 0) {
+            frame.gestures.forEach(function (gesture) {
+              switch (gesture.type) {
+                case "circle":
+                // Detect Seek Gesture
+                  const clockwise = detectCircleDirection(frame, gesture);
+                  player.getCurrentState().then(state => {
+                    if (!state) {
+                      return;
+                    }
+                    const songPosition = state.position;
+                    if (clockwise) {
+                      player.seek(songPosition + SEEK_TIME).then(() => {
+                        $(TEXT_SELECTOR).text("Fast Forward Song");
+                        console.log(`Changed position by ${SEEK_TIME}!`);
+                      });
+                    } else {
+                      player.seek(songPosition - SEEK_TIME).then(() => {
+                        $(TEXT_SELECTOR).text("Rewind Song");
+                        console.log(`Changed position by -${SEEK_TIME}!`);
+                      });
+                    }
+                  });
+                  break;
+                case "swipe":
+                  // Detect Track Gesture
+                  const previous = detectChangeTrackDirection(gesture);
+                  if (previous) {
+                    player.previousTrack().then(() => {
+                      $(TEXT_SELECTOR).text("Play Previous Song");
+                      updateTextAndTime();
+                    });
+                  } else {
+                    player.nextTrack().then(() => {
+                      $(TEXT_SELECTOR).text("Play Next Song");
+                      updateTextAndTime();
+                    });
+                  }
+                  console.log("Swipe Gesture");
+                  break;
+              }
+            });
+          }
         }
       }
     } else {
@@ -182,18 +157,6 @@ function detectChangeTrackDirection(gesture) {
   return isHorizontal && gesture.direction[0] > 0;
 }
 
-/**
- * Determines if the volume should be increased/ decreased.
- * An upwards swipe indicates that the volume should be increased.
- * An downwards swipe indicates that the volume should be decreased.
- * @param {SwipeGesture} gesture The gesture object representing a hand swipe.
- * @returns True if vertical upwards gesture, False otherwise.
- */
-function detectChangeVolumeDirection(gesture) {
-  // TODO: use position and prevPosition to get magnitude
-  var isHorizontal = Math.abs(gesture.direction[0]) > Math.abs(gesture.direction[1]);
-  return !isHorizontal && gesture.direction[1] > 0;
-}
 
 /**
  * Determines if the user is indicating to Pause/ Play the music.
@@ -283,8 +246,8 @@ function toggleVolumeMode() {
  * @param {number} itemHeight The height of one playlist item, in pixels.
  */
 function selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight) {
-  var handPostion = hand.screenPosition();
-  var yPosition = handPostion[1];
+  var handPosition = hand.screenPosition();
+  var yPosition = handPosition[1];
   resetPlaylistAppearance();
 
   // Only update the position of the cursor if hand's position is within the region with
@@ -300,6 +263,34 @@ function selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight) {
 
     // Report the highlighted playlist name
     $(TEXT_SELECTOR).text($('#item' + playlistItemIdNum.toString()).text());
+  }
+}
+
+/**
+ * Changes the volume based on the user's hand's position.
+ * @param {Hand} hand The physical characteristics of the detected hand.
+ * @param {Player} player The Spotify player.
+ */
+function changeVolume(hand, player) {
+
+  var handPosition = hand.screenPosition();
+  var yPosition = handPosition[1];
+  console.log(yPosition);
+  var openHand = (hand.thumb.extended && hand.indexFinger.extended && hand.middleFinger.extended && hand.ringFinger.extended && hand.pinky.extended);
+
+  // Only change the volume if the hand is open and
+  // its vertical position lies within [VOLUME_MIN, VOLUME_MAX]
+  if (yPosition > VOLUME_MAX_POS && yPosition < VOLUME_MIN_POS && openHand) {
+    var volume = Math.round(((yPosition - VOLUME_MIN_POS) / (VOLUME_MAX_POS - VOLUME_MIN_POS)) * 100);
+    player.setVolume(volume/100).then(() => {
+      $(TEXT_SELECTOR).text("Volume: " + volume + "%");
+      updateTextAndTime();
+    });
+  } else if (yPosition < VOLUME_MAX_POS && openHand) {
+    player.setVolume(1).then(() => {
+      $(TEXT_SELECTOR).text("Volume: 100%");
+      updateTextAndTime();
+    });
   }
 }
 
