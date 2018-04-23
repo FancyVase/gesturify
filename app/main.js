@@ -272,14 +272,11 @@ function selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight) {
  * @param {Player} player The Spotify player.
  */
 function changeVolume(hand, player) {
-
   var handPosition = hand.screenPosition();
   var yPosition = handPosition[1];
-  console.log(yPosition);
   var openHand = (hand.thumb.extended && hand.indexFinger.extended && hand.middleFinger.extended && hand.ringFinger.extended && hand.pinky.extended);
 
-  // Only change the volume if the hand is open and
-  // its vertical position lies within [VOLUME_MIN, VOLUME_MAX]
+  // Change the volume if the hand is open and its vertical position is in [VOLUME_MIN, VOLUME_MAX] range
   if (yPosition > VOLUME_MAX_POS && yPosition < VOLUME_MIN_POS && openHand) {
     var volume = Math.round(((yPosition - VOLUME_MIN_POS) / (VOLUME_MAX_POS - VOLUME_MIN_POS)) * 100);
     player.setVolume(volume/100).then(() => {
