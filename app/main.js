@@ -77,11 +77,30 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             play = !play;
             updateTextAndTime();
           }
+
+          // Detect skip to next track gesture
+          else if (detectNextTrackGesture(hand)) {
+            player.nextTrack().then(() => {
+              $(TEXT_SELECTOR).text("Play Next Song");
+              updateTextAndTime();
+            });
+            console.log("Play Next Song");
+          }
+
+          // Detect skip to previous track gesture
+          else if (detectPreviousTrackGesture(hand)) {
+            player.previousTrack().then(() => {
+              $(TEXT_SELECTOR).text("Play Previous Song");
+              updateTextAndTime();
+            });
+            console.log("Play Previous Song");
+          }
+
           else if (frame.valid && frame.gestures.length > 0) {
             frame.gestures.forEach(function (gesture) {
               switch (gesture.type) {
                 case "circle":
-                // Detect Seek Gesture
+                  // Detect Seek Gesture
                   const clockwise = detectCircleDirection(frame, gesture);
                   player.getCurrentState().then(state => {
                     if (!state) {
@@ -100,22 +119,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                       });
                     }
                   });
-                  break;
-                case "swipe":
-                  // Detect Track Gesture
-                  const previous = detectChangeTrackDirection(gesture);
-                  if (previous) {
-                    player.previousTrack().then(() => {
-                      $(TEXT_SELECTOR).text("Play Previous Song");
-                      updateTextAndTime();
-                    });
-                  } else {
-                    player.nextTrack().then(() => {
-                      $(TEXT_SELECTOR).text("Play Next Song");
-                      updateTextAndTime();
-                    });
-                  }
-                  console.log("Swipe Gesture");
                   break;
               }
             });
@@ -146,19 +149,6 @@ function detectCircleDirection(frame, gesture) {
 }
 
 /**
- * Determines if the next/ previous song should play.
- * A horizontal swipe to the left indicates skip to the next track.
- * A horizontal swipe to the right indicates skip to the previous track.
- * @param {SwipeGesture} gesture The gesture object representing a hand swipe.
- * @returns True if horizontal left gesture, False otherwise.
- */
-function detectChangeTrackDirection(gesture) {
-  var isHorizontal = Math.abs(gesture.direction[0]) > Math.abs(gesture.direction[1]);
-  return isHorizontal && gesture.direction[0] > 0;
-}
-
-
-/**
  * Determines if the user is indicating to Pause/ Play the music.
  * To do this, the user must make a halt sign.
  * @param {Hand} hand The physical characteristics of the detected hand.
@@ -171,6 +161,38 @@ function detectPlayPauseGesture(hand) {
   var openHand = grabStrength < 0.25;
   var verticalHand = (pitch > 1.15 && pitch < 2);
   return openHand && verticalHand;
+}
+
+/**
+ * Determines if the next track should play.
+ * Indicated by a thumb pointing to the right.
+ * @param {Hand} hand The physical characteristics of the detected hand.
+ * @returns True if next track should play, False otherwise.
+ */
+function detectNextTrackGesture(hand) {
+  // Check that thumb is pointing right.
+  var pointRight = hand.pointables[0].direction[0] > 0;
+
+  console.log(hand.grabStrength);
+  var closedHand = hand.grabStrength > 0.75;
+
+  return closedHand && hand.thumb.extended && pointRight;
+}
+
+/**
+ * Determines if the previous track should play.
+ * Indicated by a thumb pointing to the left.
+ * @param {Hand} hand The physical characteristics of the detected hand.
+ * @returns True if previous track should play, False otherwise.
+ */
+function detectPreviousTrackGesture(hand) {
+  // Check that thumb is pointing left.
+  var pointLeft = hand.pointables[0].direction[0] < 0;
+
+  console.log(hand.grabStrength);
+  var closedHand = hand.grabStrength > 0.75;
+
+  return closedHand && hand.thumb.extended && pointLeft;
 }
 
 /**
