@@ -1,5 +1,5 @@
 // Get token from: https://beta.developer.spotify.com/documentation/web-playback-sdk/quick-start/
-const SPOTIFY_TOKEN = "BQCt9XoFDedbbI0tnHWePr2N-9lRPB_4gyGrLot2bQ0Y-kxA-oXhFE2PsLJga55CTZ40f4VtLTDfuDlxWP5CvaXD432js_Pc2pWNYsNfuKp7dsjsyCfBrVPckNq4mhsNdrATyJufCQPfjIHZb-EEli_aOhGgYvUfwa-QEA";
+const SPOTIFY_TOKEN = "your-token-goes-here";
 
 function setUpPlayer() {
     const player = new Spotify.Player({
