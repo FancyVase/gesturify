@@ -52,3 +52,7 @@ body {
     margin-top: 20px;
     margin-left: 5%;
 }
+
+#song-text {
+    font-size: 18px;
+}
