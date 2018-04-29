@@ -40,7 +40,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     throw new Error('There was an error during the authentication');
   }
   if (access_token) {
-
     $.ajax({
       url: 'https://api.spotify.com/v1/me',
       headers: {
@@ -66,98 +65,98 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     $(ARTIST_TEXT_SELECTOR).text(artists[0].name);
   });
 
-  // Leap.loop(controllerOptions, function (frame) {
-  //   const numHands = frame.hands.length;
-  //   var currentTime = new Date().getTime();
+  Leap.loop(controllerOptions, function (frame) {
+    const numHands = frame.hands.length;
+    var currentTime = new Date().getTime();
 
-  //   // reset text
-  //   if (numHands == 0) {
-  //     $(TEXT_SELECTOR).text('');
-  //   }
+    // reset text
+    if (numHands == 0) {
+      $(TEXT_SELECTOR).text('');
+    }
 
-  //   // recognize one-handed gestures
-  //   else if (numHands == 1) {
-  //     var hand = frame.hands[0];
+    // recognize one-handed gestures
+    else if (numHands == 1) {
+      var hand = frame.hands[0];
 
-  //     if (addToPlaylistMode) {
-  //       selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight);
-  //     } else if (changeVolumeMode) {
-  //       changeVolume(hand, player);
-  //     } else {
-  //       resetPlaylistAppearance();
-  //       resetCursor();
+      if (addToPlaylistMode) {
+        selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight);
+      } else if (changeVolumeMode) {
+        changeVolume(hand, player);
+      } else {
+        resetPlaylistAppearance();
+        resetCursor();
 
-  //       // Delay gesture recognition
-  //       if (currentTime - prevGestureTime >= GESTURE_DELAY) {
+        // Delay gesture recognition
+        if (currentTime - prevGestureTime >= GESTURE_DELAY) {
 
-  //         // Detect Play/ Pause Gesture
-  //         if (detectPlayPauseGesture(hand)) {
-  //           if (play) {
-  //             player.pause().then(() => {
-  //               $(TEXT_SELECTOR).text('Pause');
-  //             });
-  //           } else {
-  //             player.resume().then(() => {
-  //               $(TEXT_SELECTOR).text('Play');
-  //             });
-  //           }
+          // Detect Play/ Pause Gesture
+          if (detectPlayPauseGesture(hand)) {
+            if (play) {
+              player.pause().then(() => {
+                $(TEXT_SELECTOR).text('Pause');
+              });
+            } else {
+              player.resume().then(() => {
+                $(TEXT_SELECTOR).text('Play');
+              });
+            }
 
-  //           play = !play;
-  //           updateTextAndTime();
-  //         }
+            play = !play;
+            updateTextAndTime();
+          }
 
-  //         // Detect skip to next track gesture
-  //         else if (detectNextTrackGesture(hand)) {
-  //           player.nextTrack().then(() => {
-  //             $(TEXT_SELECTOR).text("Play Next Song");
-  //             updateTextAndTime();
-  //           });
-  //           console.log("Play Next Song");
-  //         }
+          // Detect skip to next track gesture
+          else if (detectNextTrackGesture(hand)) {
+            player.nextTrack().then(() => {
+              $(TEXT_SELECTOR).text("Play Next Song");
+              updateTextAndTime();
+            });
+            console.log("Play Next Song");
+          }
 
-  //         // Detect skip to previous track gesture
-  //         else if (detectPreviousTrackGesture(hand)) {
-  //           player.previousTrack().then(() => {
-  //             $(TEXT_SELECTOR).text("Play Previous Song");
-  //             updateTextAndTime();
-  //           });
-  //           console.log("Play Previous Song");
-  //         }
+          // Detect skip to previous track gesture
+          else if (detectPreviousTrackGesture(hand)) {
+            player.previousTrack().then(() => {
+              $(TEXT_SELECTOR).text("Play Previous Song");
+              updateTextAndTime();
+            });
+            console.log("Play Previous Song");
+          }
 
-  //         else if (frame.valid && frame.gestures.length > 0) {
-  //           frame.gestures.forEach(function (gesture) {
-  //             switch (gesture.type) {
-  //               case "circle":
-  //                 // Detect Seek Gesture
-  //                 const clockwise = detectCircleDirection(frame, gesture);
-  //                 player.getCurrentState().then(state => {
-  //                   if (!state) {
-  //                     return;
-  //                   }
-  //                   const songPosition = state.position;
-  //                   if (clockwise) {
-  //                     player.seek(songPosition + SEEK_TIME).then(() => {
-  //                       $(TEXT_SELECTOR).text("Fast Forward Song");
-  //                       console.log(`Changed position by ${SEEK_TIME}!`);
-  //                     });
-  //                   } else {
-  //                     player.seek(songPosition - SEEK_TIME).then(() => {
-  //                       $(TEXT_SELECTOR).text("Rewind Song");
-  //                       console.log(`Changed position by -${SEEK_TIME}!`);
-  //                     });
-  //                   }
-  //                 });
-  //                 break;
-  //             }
-  //           });
-  //         }
-  //       }
-  //     }
-  //   } else {
-  //     // warn user
-  //     $(TEXT_SELECTOR).text("Only use one hand!");
-  //   }
-  // }).use('screenPosition', { scale: 0.5 });
+          else if (frame.valid && frame.gestures.length > 0) {
+            frame.gestures.forEach(function (gesture) {
+              switch (gesture.type) {
+                case "circle":
+                  // Detect Seek Gesture
+                  const clockwise = detectCircleDirection(frame, gesture);
+                  player.getCurrentState().then(state => {
+                    if (!state) {
+                      return;
+                    }
+                    const songPosition = state.position;
+                    if (clockwise) {
+                      player.seek(songPosition + SEEK_TIME).then(() => {
+                        $(TEXT_SELECTOR).text("Fast Forward Song");
+                        console.log(`Changed position by ${SEEK_TIME}!`);
+                      });
+                    } else {
+                      player.seek(songPosition - SEEK_TIME).then(() => {
+                        $(TEXT_SELECTOR).text("Rewind Song");
+                        console.log(`Changed position by -${SEEK_TIME}!`);
+                      });
+                    }
+                  });
+                  break;
+              }
+            });
+          }
+        }
+      }
+    } else {
+      // warn user
+      $(TEXT_SELECTOR).text("Only use one hand!");
+    }
+  }).use('screenPosition', { scale: 0.5 });
 };
 
 /**
