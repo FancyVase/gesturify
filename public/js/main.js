@@ -10,6 +10,7 @@ const GESTURE_DELAY = 2 * MS_TO_S;
 const SEEK_TIME = 10 * MS_TO_S;
 const VOLUME_MAX_POS = -200;
 const VOLUME_MIN_POS = 400;
+const typeEnum = { ALBUM: "album", ARTIST: "artist", PLAYLIST: "playlist", TRACK: "track" };
 
 // Selectors
 const TEXT_SELECTOR = '#gesture-text';
@@ -39,24 +40,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
   if (error) {
     throw new Error('There was an error during the authentication');
   }
-  if (access_token) {
-    $.ajax({
-      url: 'https://api.spotify.com/v1/me',
-      headers: {
-        'Authorization': 'Bearer ' + access_token
-      },
-      success: function (response) {
-        $('#login').hide();
-        $('#loggedin').show();
-      }
-    });
-  } else {
-    // render initial screen
-    $('#login').show();
-    $('#loggedin').hide();
-  }
 
+  authenticateUser(access_token);
   const player = setUpPlayer(access_token);
+  const uriObject = search("stay frosty royal milk tea", typeEnum.TRACK, access_token);
+  changeUserPlayback(typeEnum.TRACK, [uriObject.uri], access_token, player.device_id)
 
   // Retrive current track details
   player.on('player_state_changed', ({ paused, track_window: { current_track: { name, artists } } }) => {
@@ -159,94 +147,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
   }).use('screenPosition', { scale: 0.5 });
 };
 
-/**
- * Determines if a song should be fast-forwarded/ rewinded.
- * The clockwise motion of the finger indicates fast forward. Otherwise, rewind.
- * @param {Frame} frame The current frame given by the Leap Motion controller.
- * @param {CircleGesture} gesture The gesture object representing a circular finger movement.
- * @returns True if clockwise circle gesture, False otherwise.
- * 
- */
-function detectCircleDirection(frame, gesture) {
-  var pointableID = gesture.pointableIds[0];
-  var direction = frame.pointable(pointableID).direction;
-  var dotProduct = Leap.vec3.dot(direction, gesture.normal);
-
-  return dotProduct > 0;
-}
-
-/**
- * Determines if the user is indicating to Pause/ Play the music.
- * To do this, the user must make a halt sign.
- * @param {Hand} hand The physical characteristics of the detected hand.
- * @returns True if the hand is making Play/ Pause gesture, False otherwise.
- */
-function detectPlayPauseGesture(hand) {
-  var pitch = hand.pitch();
-  var grabStrength = hand.grabStrength;
-
-  var openHand = grabStrength < 0.25;
-  var verticalHand = (pitch > 1.15 && pitch < 2);
-  return openHand && verticalHand;
-}
-
-/**
- * Determines if the next track should play.
- * Indicated by a thumb pointing to the right.
- * @param {Hand} hand The physical characteristics of the detected hand.
- * @returns True if next track should play, False otherwise.
- */
-function detectNextTrackGesture(hand) {
-  // Check that thumb is pointing right.
-  var pointRight = hand.pointables[0].direction[0] > 0;
-
-  console.log(hand.grabStrength);
-  var closedHand = hand.grabStrength > 0.75;
-
-  return closedHand && hand.thumb.extended && pointRight;
-}
-
-/**
- * Determines if the previous track should play.
- * Indicated by a thumb pointing to the left.
- * @param {Hand} hand The physical characteristics of the detected hand.
- * @returns True if previous track should play, False otherwise.
- */
-function detectPreviousTrackGesture(hand) {
-  // Check that thumb is pointing left.
-  var pointLeft = hand.pointables[0].direction[0] < 0;
-
-  console.log(hand.grabStrength);
-  var closedHand = hand.grabStrength > 0.75;
-
-  return closedHand && hand.thumb.extended && pointLeft;
-}
-
-/**
- * Determines if the user is indicating to save the current song to the user's library.
- * To do this, the user must make a thumbs up gesture.
- * @param {Hand} hand The physical characteristics of the detected hand.
- * @returns True if the hand is making a thumbs up gesture, False otherwise.
- */
-function detectThumbsUpGesture(hand) {
-  var thumbExtended = hand.thumb.extended;
-  var thumbUpright = hand.thumb.direction[1] > 0.4;
-  var closedFingers = (hand.indexFinger.extended || hand.middleFinger.extended || hand.ringFinger.extended || hand.pinky.extended);
-
-  return thumbExtended && !closedFingers && thumbUpright;
-}
-
-/**
- * Determines if the user is indicating to search for a song.
- * To do this, the user must make a closed fist gesture.
- * @param {Hand} hand The physical characteristics of the detected hand.
- * @returns True if the hand is making a closed fist gesture, False otherwise.
- */
-function detectFistGesture(hand) {
-  var closedFingers = (hand.thumb.extended || hand.indexFinger.extended || hand.middleFinger.extended || hand.ringFinger.extended || hand.pinky.extended);
-
-  return !closedFingers && (hand.grabStrength === 1);
-}
 
 /**
  * Toggles between the ability to select a playlist or make gestures to control the player.
@@ -374,4 +274,214 @@ function resetCursor() {
  */
 function resetText() {
   setTimeout(() => $(TEXT_SELECTOR).text(''), 1750);
+}
+
+/////////////////////// SPOTIFY ///////////////////////////////
+// For more info about Spotify URIs and IDs, see: https://beta.developer.spotify.com/documentation/web-api/#spotify-uris-and-ids
+function authenticateUser(access_token) {
+  if (access_token) {
+    $.ajax({
+      url: 'https://api.spotify.com/v1/me',
+      headers: {
+        'Authorization': 'Bearer ' + access_token
+      },
+      success: function (response) {
+        $('#login').hide();
+        $('#loggedin').show();
+      }
+    });
+  } else {
+    // render initial screen
+    $('#login').show();
+    $('#loggedin').hide();
+  }
+}
+
+function getUserPlaylists(access_token) {
+  $.ajax({
+    url: 'https://api.spotify.com/v1/me/playlists',
+    headers: {
+      'Authorization': 'Bearer ' + access_token
+    },
+    success: function (response) {
+      // NOTE: use playlist id as html id
+      const playlists = response.items.map((playlist) => {
+        return {
+          id: playlist.id,
+          name: playlist.name
+        }
+      });
+
+      console.log(playlists);
+    },
+    error: function (err) {
+      console.log(err);
+    }
+  });
+}
+
+/**
+ * 
+ * @param {string} user_id The unique string identifying the Spotify user that you 
+ *                    can find at the end of the Spotify URI (e.g. spotify:user:wizzler) 
+ *                    for the user, e.g. wizzler
+ * @param {string} playlist_id 	The base-62 identifier that you can find at the 
+ *                    end of the Spotify URI (e.g. spotify:playlist:37i9dQZF1DX1ewVhAJ17m4) 
+ *                    for a playlist, e.g. 37i9dQZF1DX1ewVhAJ17m4
+ * @param {string[]} track_uris An array of Spotify track URIs.
+ *                    The resource identifier that you can enter, for example, in the 
+ *                    Spotify Desktop client’s search box to locate an artist, album, or track.
+ *                    (e.g. spotify:track:6rqhFgbbKwnb9MLmUQDhG6)
+ * @param {*} access_token 
+ */
+function addTracksToPlaylist(user_id, playlist_id, track_uris, access_token) {
+  $.ajax({
+    type: 'POST',
+    url: `https://api.spotify.com/v1/users/${user_id}/playlists/${playlist_id}/tracks`,
+    headers: {
+      'Authorization': 'Bearer ' + access_token
+    },
+    contentType: 'application/json',
+    data: JSON.stringify({ "uris": track_uris }),
+    success: function (response) {
+      console.log(response);
+    },
+    error: function (err) {
+      console.log(err);
+    }
+  });
+}
+
+/**
+ * 
+ * @param {string} keywords Not case-sensitive. Unless surrounded by double quotation marks,
+ *                          keywords are matched in any order. Only popular playlists returned
+ *                          if type===playlist.
+ * @param {string} type See typeEnum
+ * @param {string} access_token 
+ * @returns {*} The first response item
+ */
+function search(keywords, type, access_token) {
+  //https://beta.developer.spotify.com/documentation/web-api/reference/search/search/
+  var query = keywords.replace(' ', '%20');
+  let result;
+
+  $.ajax({
+    url: 'https://api.spotify.com/v1/search',
+    headers: {
+      'Authorization': 'Bearer ' + access_token
+    },
+    data: {
+      q: keywords,
+      type: type,
+      limit: 1
+    },
+    success: function (response) {
+      
+      if (type === typeEnum.ALBUM) {
+        result = response.albums.items.map((album) => {
+          return {
+            id: album.id,
+            name: album.name,
+            uri: album.uri
+          }
+        });
+      } else if (type === typeEnum.ARTIST) {
+        result = response.artists.items.map((artist) => {
+          return {
+            id: artist.id,
+            name: artist.name,
+            uri: artist.uri
+          }
+        });
+      } else if (type === typeEnum.PLAYLIST) {
+        result = response.playlists.items.map((playlist) => {
+          return {
+            id: playlist.id,
+            name: playlist.name,
+            uri: playlist.uri
+          }
+        });
+      } else {
+        result = response.tracks.items.map((track) => {
+          return {
+            id: track.id,
+            name: track.name,
+            uri: track.uri
+          }
+        });
+      }
+      console.log(result);
+    },
+    error: function (err) {
+      console.log(err);
+    }
+  });
+}
+
+/**
+ * 
+ * @param {string} device_id 
+ * @param {string} type See typeEnum
+ * @param {string[]} uris if album/artist/playlist, uris.length === 1
+ */
+function changeUserPlayback(type, uris, access_token, device_id) {
+  console.log("hry", uris);
+  //https://beta.developer.spotify.com/documentation/web-playback-sdk/reference/#playing-a-spotify-uri
+  //https://beta.developer.spotify.com/documentation/web-api/reference/player/start-a-users-playback/
+  const track_data = { device_id: device_id, uris: uris };
+  const other_data = { device_id: device_id, context_uri: uris[0] };
+  const req_data = type === typeEnum.TRACK ? track_data : other_data;
+
+  $.ajax({
+    type: 'PUT',
+    url: `https://api.spotify.com/v1/me/player/play`,
+    headers: {
+      'Authorization': 'Bearer ' + access_token
+    },
+    contentType: 'application/json',
+    data: JSON.stringify(req_data),
+    success: function (response) {
+      console.log(response);
+    },
+    error: function (err) {
+      console.log(err);
+    }
+  });
+}
+
+/**
+ * 
+ * @param {string[]} track_ids An array of Spotify Track IDs.
+ *                             The base-62 identifier that you can find at the 
+ *                             end of the Spotify URI (e.g. spotify:track:4iV5W9uYEdYUVa79Axb7Rh) 
+ *                             for a track, e.g. 4iV5W9uYEdYUVa79Axb7Rh
+ * @param {string} access_token 
+ */
+function saveTracksToUserLibrary(track_ids, access_token) {
+  // https://beta.developer.spotify.com/documentation/web-api/reference/library/save-tracks-user/
+  $.ajax({
+    type: 'PUT',
+    url: `https://api.spotify.com/v1/me/tracks`,
+    headers: {
+      'Authorization': 'Bearer ' + access_token
+    },
+    contentType: 'application/json',
+    data: JSON.stringify({ "ids": track_ids }),
+    success: function (response) {
+      console.log(response);
+    },
+    error: function (err) {
+      console.log(err);
+    }
+  });
+
+}
+
+function repeat(state, access_token) {
+  // https://beta.developer.spotify.com/documentation/web-api/reference/player/set-repeat-mode-on-users-playback/
+}
+
+function shuffle(state, access_token) {
+  // https://beta.developer.spotify.com/documentation/web-api/reference/player/toggle-shuffle-for-users-playback/
 }
