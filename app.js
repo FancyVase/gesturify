@@ -5,6 +5,8 @@
  *
  * For more information, read
  * https://developer.spotify.com/web-api/authorization-guide/#authorization_code_flow
+ * 
+ * Reference: https://github.com/spotify/web-api-auth-examples
  */
 
 var express = require('express'); // Express web server framework
@@ -19,7 +21,7 @@ var redirect_uri = 'REDIRECT_URI'; // Your redirect uri
 
 // TODO: Add/ remove scopes as necessary
 var scope = ["user-read-private", "user-read-email", "streaming", 
-            "user-read-birthdate", "playlist-modify-public", 
+            "user-read-birthdate","user-modify-playback-state", "playlist-modify-public", 
             "playlist-modify-private", "playlist-read-collaborative", 
             "playlist-read-private", "user-library-read", "user-library-modify"];
 

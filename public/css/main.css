@@ -4,6 +4,10 @@ body {
     font-family: 'Lato', sans-serif;
 }
 
+.hide {
+    display: none;
+}
+
 .ui.vertical.menu {
     width: 20%;
 }

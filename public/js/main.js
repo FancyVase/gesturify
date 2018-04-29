@@ -10,7 +10,11 @@ const GESTURE_DELAY = 2 * MS_TO_S;
 const SEEK_TIME = 10 * MS_TO_S;
 const VOLUME_MAX_POS = -200;
 const VOLUME_MIN_POS = 400;
-const typeEnum = { ALBUM: "album", ARTIST: "artist", PLAYLIST: "playlist", TRACK: "track" };
+
+// Spotify States/ Types
+const SPOTIFY_TYPE = { ALBUM: "album", ARTIST: "artist", PLAYLIST: "playlist", TRACK: "track" };
+const REPEAT_STATE = { TRACK: "track", CONTEXT: "context", OFF: "off" };
+const SHUFFLE_STATE = { ON: true, OFF: false };
 
 // Selectors
 const TEXT_SELECTOR = '#gesture-text';
@@ -30,8 +34,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
   const itemHeight = $(PLAYLIST_ITEM_SELECTOR).outerHeight();
   const numItems = $(PLAYLIST_ITEM_SELECTOR).length;
 
+  // Retrieving Spotify user info and credentials
   var params = getHashParams();
-
   var access_token = params.access_token,
     refresh_token = params.refresh_token,
     user_id = params.user_id,
@@ -41,10 +45,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     throw new Error('There was an error during the authentication');
   }
 
-  authenticateUser(access_token);
-  const player = setUpPlayer(access_token);
-  const uriObject = search("stay frosty royal milk tea", typeEnum.TRACK, access_token);
-  changeUserPlayback(typeEnum.TRACK, [uriObject.uri], access_token, player.device_id)
+  getUserDetails(access_token);
+  const player = setUpPlayer(access_token); // device_id === player.device_id
 
   // Retrive current track details
   player.on('player_state_changed', ({ paused, track_window: { current_track: { name, artists } } }) => {
@@ -274,214 +276,4 @@ function resetCursor() {
  */
 function resetText() {
   setTimeout(() => $(TEXT_SELECTOR).text(''), 1750);
-}
-
-/////////////////////// SPOTIFY ///////////////////////////////
-// For more info about Spotify URIs and IDs, see: https://beta.developer.spotify.com/documentation/web-api/#spotify-uris-and-ids
-function authenticateUser(access_token) {
-  if (access_token) {
-    $.ajax({
-      url: 'https://api.spotify.com/v1/me',
-      headers: {
-        'Authorization': 'Bearer ' + access_token
-      },
-      success: function (response) {
-        $('#login').hide();
-        $('#loggedin').show();
-      }
-    });
-  } else {
-    // render initial screen
-    $('#login').show();
-    $('#loggedin').hide();
-  }
-}
-
-function getUserPlaylists(access_token) {
-  $.ajax({
-    url: 'https://api.spotify.com/v1/me/playlists',
-    headers: {
-      'Authorization': 'Bearer ' + access_token
-    },
-    success: function (response) {
-      // NOTE: use playlist id as html id
-      const playlists = response.items.map((playlist) => {
-        return {
-          id: playlist.id,
-          name: playlist.name
-        }
-      });
-
-      console.log(playlists);
-    },
-    error: function (err) {
-      console.log(err);
-    }
-  });
-}
-
-/**
- * 
- * @param {string} user_id The unique string identifying the Spotify user that you 
- *                    can find at the end of the Spotify URI (e.g. spotify:user:wizzler) 
- *                    for the user, e.g. wizzler
- * @param {string} playlist_id 	The base-62 identifier that you can find at the 
- *                    end of the Spotify URI (e.g. spotify:playlist:37i9dQZF1DX1ewVhAJ17m4) 
- *                    for a playlist, e.g. 37i9dQZF1DX1ewVhAJ17m4
- * @param {string[]} track_uris An array of Spotify track URIs.
- *                    The resource identifier that you can enter, for example, in the 
- *                    Spotify Desktop client’s search box to locate an artist, album, or track.
- *                    (e.g. spotify:track:6rqhFgbbKwnb9MLmUQDhG6)
- * @param {*} access_token 
- */
-function addTracksToPlaylist(user_id, playlist_id, track_uris, access_token) {
-  $.ajax({
-    type: 'POST',
-    url: `https://api.spotify.com/v1/users/${user_id}/playlists/${playlist_id}/tracks`,
-    headers: {
-      'Authorization': 'Bearer ' + access_token
-    },
-    contentType: 'application/json',
-    data: JSON.stringify({ "uris": track_uris }),
-    success: function (response) {
-      console.log(response);
-    },
-    error: function (err) {
-      console.log(err);
-    }
-  });
-}
-
-/**
- * 
- * @param {string} keywords Not case-sensitive. Unless surrounded by double quotation marks,
- *                          keywords are matched in any order. Only popular playlists returned
- *                          if type===playlist.
- * @param {string} type See typeEnum
- * @param {string} access_token 
- * @returns {*} The first response item
- */
-function search(keywords, type, access_token) {
-  //https://beta.developer.spotify.com/documentation/web-api/reference/search/search/
-  var query = keywords.replace(' ', '%20');
-  let result;
-
-  $.ajax({
-    url: 'https://api.spotify.com/v1/search',
-    headers: {
-      'Authorization': 'Bearer ' + access_token
-    },
-    data: {
-      q: keywords,
-      type: type,
-      limit: 1
-    },
-    success: function (response) {
-      
-      if (type === typeEnum.ALBUM) {
-        result = response.albums.items.map((album) => {
-          return {
-            id: album.id,
-            name: album.name,
-            uri: album.uri
-          }
-        });
-      } else if (type === typeEnum.ARTIST) {
-        result = response.artists.items.map((artist) => {
-          return {
-            id: artist.id,
-            name: artist.name,
-            uri: artist.uri
-          }
-        });
-      } else if (type === typeEnum.PLAYLIST) {
-        result = response.playlists.items.map((playlist) => {
-          return {
-            id: playlist.id,
-            name: playlist.name,
-            uri: playlist.uri
-          }
-        });
-      } else {
-        result = response.tracks.items.map((track) => {
-          return {
-            id: track.id,
-            name: track.name,
-            uri: track.uri
-          }
-        });
-      }
-      console.log(result);
-    },
-    error: function (err) {
-      console.log(err);
-    }
-  });
-}
-
-/**
- * 
- * @param {string} device_id 
- * @param {string} type See typeEnum
- * @param {string[]} uris if album/artist/playlist, uris.length === 1
- */
-function changeUserPlayback(type, uris, access_token, device_id) {
-  console.log("hry", uris);
-  //https://beta.developer.spotify.com/documentation/web-playback-sdk/reference/#playing-a-spotify-uri
-  //https://beta.developer.spotify.com/documentation/web-api/reference/player/start-a-users-playback/
-  const track_data = { device_id: device_id, uris: uris };
-  const other_data = { device_id: device_id, context_uri: uris[0] };
-  const req_data = type === typeEnum.TRACK ? track_data : other_data;
-
-  $.ajax({
-    type: 'PUT',
-    url: `https://api.spotify.com/v1/me/player/play`,
-    headers: {
-      'Authorization': 'Bearer ' + access_token
-    },
-    contentType: 'application/json',
-    data: JSON.stringify(req_data),
-    success: function (response) {
-      console.log(response);
-    },
-    error: function (err) {
-      console.log(err);
-    }
-  });
-}
-
-/**
- * 
- * @param {string[]} track_ids An array of Spotify Track IDs.
- *                             The base-62 identifier that you can find at the 
- *                             end of the Spotify URI (e.g. spotify:track:4iV5W9uYEdYUVa79Axb7Rh) 
- *                             for a track, e.g. 4iV5W9uYEdYUVa79Axb7Rh
- * @param {string} access_token 
- */
-function saveTracksToUserLibrary(track_ids, access_token) {
-  // https://beta.developer.spotify.com/documentation/web-api/reference/library/save-tracks-user/
-  $.ajax({
-    type: 'PUT',
-    url: `https://api.spotify.com/v1/me/tracks`,
-    headers: {
-      'Authorization': 'Bearer ' + access_token
-    },
-    contentType: 'application/json',
-    data: JSON.stringify({ "ids": track_ids }),
-    success: function (response) {
-      console.log(response);
-    },
-    error: function (err) {
-      console.log(err);
-    }
-  });
-
-}
-
-function repeat(state, access_token) {
-  // https://beta.developer.spotify.com/documentation/web-api/reference/player/set-repeat-mode-on-users-playback/
-}
-
-function shuffle(state, access_token) {
-  // https://beta.developer.spotify.com/documentation/web-api/reference/player/toggle-shuffle-for-users-playback/
 }
