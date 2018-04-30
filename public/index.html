@@ -31,6 +31,9 @@
     <!-- Spotify Web Playback SDK -->
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
 
+    <!-- Handlebars -->
+    <script type="text/javascript" src="lib/handlebars.min-latest.js"></script>
+
     <!-- App code -->
     <script type="text/javascript" src="js/spotify.js"></script>
     <script type="text/javascript" src="js/main.js"></script>
@@ -64,24 +67,13 @@
                     <b>Playlists</b>
                 </div>
                 <div class="menu listings">
-                    <a class="item playlist-item" id="item0">
-                        Spring Break Road Trip
-                    </a>
-                    <a class="item playlist-item" id="item1">
-                        Get Pumped
-                    </a>
-                    <a class="item playlist-item" id="item2">
-                        Teenage Angst
-                    </a>
-                    <a class="item playlist-item" id="item3">
-                        Christmas Music
-                    </a>
-                    <a class="item playlist-item" id="item4">
-                        It's a trap!
-                    </a>
-                    <a class="item playlist-item" id="item5">
-                        Focus
-                    </a>
+                    <script id="playlist-template" type="x-handlebars-template">
+                        {{#each this}}
+                        <a class="item playlist-item" id="/{{id}}">
+                            {{name}}
+                        </a>
+                        {{/each}}
+                    </script>
                 </div>
             </div>
             <div class="ui buttons">

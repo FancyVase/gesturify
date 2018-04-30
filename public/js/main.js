@@ -18,6 +18,7 @@ const PLAYLIST_ITEM_SELECTOR = '.playlist-item';
 const CURSOR_SELECTOR = '.circle.icon';
 const SONG_TEXT_SELECTOR = '#song-title';
 const ARTIST_TEXT_SELECTOR = '#artist';
+const PLAYLIST_TEMPLATE = '#playlist-template';
 
 // Controller options for the Leap Motion
 const controllerOptions = { enableGestures: true, background: true };
@@ -48,6 +49,22 @@ window.onSpotifyWebPlaybackSDKReady = () => {
       success: function (response) {
         $('#login').hide();
         $('#loggedin').show();
+      }
+    });
+
+    // Load playlists
+    $.ajax({
+      url: 'https://api.spotify.com/v1/me/playlists',
+      data: { limit: 50 },
+      headers: {
+        'Authorization': 'Bearer ' + access_token
+      },
+      success: function (response) {
+        var playlists = response.items.map(item => { return { name: item.name, id: item.id } });
+        var templateScript = $(PLAYLIST_TEMPLATE).html(); 
+         //Compile the template​
+        var template = Handlebars.compile(templateScript); 
+        $(".listings").append(template(playlists)); 
       }
     });
   } else {
