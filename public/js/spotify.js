@@ -143,10 +143,9 @@ function addTracksToPlaylist(user_id, playlist_id, track_uris, access_token) {
  *                          if type===playlist.
  * @param {string} type See SPOTIFY_TYPE
  * @param {string} accessToken A valid access token from the Spotify Accounts service 
- * @param {string} device_id The id of the device this command is targeting. 
  * @see https://beta.developer.spotify.com/documentation/web-api/reference/search/search/
  */
-function search(keywords, type, access_token, device_id) {
+function search(keywords, type, access_token) {
     var query = keywords.replace(' ', '%20');
 
     $.ajax({
@@ -161,13 +160,14 @@ function search(keywords, type, access_token, device_id) {
         }
     }).done(function (response) {
         if (type === SPOTIFY_TYPE.ALBUM) {
-            changeUserPlayback(type, [response.albums.items[0].uri], access_token, device_id);
+            changeUserPlayback(type, [response.albums.items[0].uri], access_token);
         } else if (type === SPOTIFY_TYPE.ARTIST) {
-            changeUserPlayback(type, [response.artists.items[0].uri], access_token, device_id);
+            changeUserPlayback(type, [response.artists.items[0].uri], access_token);
         } else if (type === SPOTIFY_TYPE.PLAYLIST) {
-            changeUserPlayback(type, [response.playlists.items[0].uri], access_token, device_id);
+            console.log(response);
+            changeUserPlayback(type, [response.playlists.items[0].uri], access_token);
         } else {
-            changeUserPlayback(type, [response.tracks.items[0].uri], access_token, device_id);
+            changeUserPlayback(type, [response.tracks.items[0].uri], access_token);
         }
     });
 }
@@ -177,12 +177,11 @@ function search(keywords, type, access_token, device_id) {
  * @param {string} type See SPOTIFY_TYPE
  * @param {string[]} uris if album/artist/playlist, uris.length === 1 * 
  * @param {string} accessToken A valid access token from the Spotify Accounts service 
- * @param {string} device_id The id of the device this command is targeting. 
  * @see https://beta.developer.spotify.com/documentation/web-api/reference/player/start-a-users-playback/ | BETA
  */
-function changeUserPlayback(type, uris, access_token, device_id) {
-    const track_data = { device_id: device_id, uris: uris };
-    const other_data = { device_id: device_id, context_uri: uris[0] };
+function changeUserPlayback(type, uris, access_token) {
+    const track_data = { uris: uris };
+    const other_data = { context_uri: uris[0] };
     const req_data = type === SPOTIFY_TYPE.TRACK ? track_data : other_data;
 
     $.ajax({

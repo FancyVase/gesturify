@@ -39,7 +39,6 @@ function detectNextTrackGesture(hand) {
     // Check that thumb is pointing right.
     var pointRight = hand.pointables[0].direction[0] > 0;
 
-    console.log(hand.grabStrength);
     var closedHand = hand.grabStrength > 0.75;
 
     return closedHand && hand.thumb.extended && pointRight;

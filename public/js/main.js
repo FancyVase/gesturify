@@ -3,6 +3,7 @@ let play;
 var prevGestureTime = new Date().getTime();
 var addToPlaylistMode = false;
 var changeVolumeMode = false;
+let access_token;
 
 // Constants
 const MS_TO_S = 1000;
@@ -37,10 +38,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
   // Retrieving Spotify user info and credentials
   var params = getHashParams();
-  var access_token = params.access_token,
-    refresh_token = params.refresh_token,
-    user_id = params.user_id,
-    error = params.error;
+  access_token = params.access_token;
+  // TODO: do we need these?
+  // refresh_token = params.refresh_token,
+  // user_id = params.user_id,
+  let error = params.error;
 
   if (error) {
     throw new Error('There was an error during the authentication');
@@ -310,3 +312,71 @@ function resetCursor() {
 function resetText() {
   setTimeout(() => $(TEXT_SELECTOR).text(''), 1750);
 }
+
+/**
+ * Processes Web Speech API recognized speech.
+ * Input: transcript, a string of possibly multiple words that were recognized
+ * Output: processed, a boolean indicating whether the system reacted to the speech or not
+ */
+var processSpeech = function(transcript) {
+  transcript = transcript.toLowerCase();
+  // Helper function to detect if any commands appear in a string
+  var userSaid = function(str, commands) {
+    for (var i = 0; i < commands.length; i++) {
+      if (str.indexOf(commands[i]) > -1)
+        return true;
+    }
+    return false;
+  };
+
+  if (transcript.length > 0) {
+    console.log(`Speech: ${transcript}`);
+  }
+
+  var processed = false;
+
+  if (userSaid(transcript, ['volume'])) {
+    toggleVolumeMode();
+    updateTextAndTime();
+    processed = true;
+  }
+
+  else if (userSaid(transcript, ['search'])) {
+    if (userSaid(transcript, ['album'])) {
+      let words = transcript.split(" ");
+      try {
+        let typeIndex = words.indexOf('album');
+        search(words.slice(typeIndex+1).join(' '), 'album', access_token);
+      } catch (e) {
+        console.error(e);
+      }
+    } else if (userSaid(transcript, ['artist'])) {
+      let words = transcript.split(" ");
+      try {
+        let typeIndex = words.indexOf('artist');
+        search(words.slice(typeIndex+1).join(' '), 'artist', access_token);
+      } catch (e) {
+        console.error(e);
+      }
+    } else if (userSaid(transcript, ['playlist'])) {
+      let words = transcript.split(" ");
+      try {
+        let typeIndex = words.indexOf('playlist');
+        search(words.slice(typeIndex+1).join(' '), 'playlist', access_token);
+      } catch (e) {
+        console.error(e);
+      }
+    } else if (userSaid(transcript, ['song', 'track'])) {
+      let words = transcript.split(" ");
+      try {
+        let typeIndex = words.indexOf('song') > -1 ? words.indexOf('song') : words.indexOf('track');
+        search(words.slice(typeIndex+1).join(' '), 'track', access_token);
+      } catch (e) {
+        console.error(e);
+      }
+    } 
+  }
+
+
+  return processed;
+};
