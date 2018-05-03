@@ -39,9 +39,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
   // Retrieving Spotify user info and credentials
   var params = getHashParams();
   access_token = params.access_token;
-  // TODO: do we need these?
-  // refresh_token = params.refresh_token,
-  // user_id = params.user_id,
+  refresh_token = params.refresh_token;
+  user_id = params.user_id;
   let error = params.error;
 
   if (error) {
