@@ -59,7 +59,7 @@ body {
 }
 
 .circle.icon {
-    position: absolute;
+    position: fixed;
     top: 0px;
     right: 0%;
 }

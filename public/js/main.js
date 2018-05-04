@@ -19,6 +19,7 @@ const SHUFFLE_STATE = { ON: true, OFF: false };
 
 // Selectors
 const TEXT_SELECTOR = '#gesture-text';
+const SIDEBAR_SELECTOR = 'div#sidebar';
 const MENU_SELECTOR = '.menu.listings';
 const PLAYLIST_ITEM_SELECTOR = '.playlist-item';
 const CURSOR_SELECTOR = '.circle.icon';
@@ -30,11 +31,11 @@ const PLAYLIST_TEMPLATE = '#playlist-template';
 const controllerOptions = { enableGestures: true, background: true };
 
 window.onSpotifyWebPlaybackSDKReady = () => {
-  // Getting values for playlist task
-  const listingsTopPos = $(MENU_SELECTOR).offset().top;
-  const listingsHeight = $(MENU_SELECTOR).outerHeight();
-  const itemHeight = $(PLAYLIST_ITEM_SELECTOR).outerHeight();
-  const numItems = $(PLAYLIST_ITEM_SELECTOR).length;
+  // Values for playlist task
+  let listingsTopPos;
+  let listingsHeight;
+  let itemHeight;
+  let numItems;
 
   // Retrieving Spotify user info and credentials
   var params = getHashParams();
@@ -71,6 +72,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
          //Compile the template​
         var template = Handlebars.compile(templateScript); 
         $(".listings").append(template(playlists)); 
+
+        listingsTopPos = $(MENU_SELECTOR).offset().top;
+        listingsHeight = $(MENU_SELECTOR).outerHeight();
+        itemHeight = $(PLAYLIST_ITEM_SELECTOR).outerHeight();
+        numItems = $(PLAYLIST_ITEM_SELECTOR).length;
       }
     });
   } else {
@@ -238,19 +244,22 @@ function selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight) {
   var yPosition = handPosition[1];
   resetPlaylistAppearance();
 
+  let scrollOffset = $(SIDEBAR_SELECTOR).scrollTop();
+
   // Only update the position of the cursor if hand's position is within the region with
   // playlist items
-  if (yPosition - listingsTopPos > 0 && yPosition - listingsTopPos < listingsHeight) {
-    $(CURSOR_SELECTOR).css({ top: yPosition.toString() + 'px', right: '18%' });
+  if (yPosition - listingsTopPos > 0) {
+    var offsetYPosition = yPosition + scrollOffset;
+    $(CURSOR_SELECTOR).css({ top: offsetYPosition.toString() + 'px', right: '18%' });
 
     // Determine which playlist the cursor is over
-    var playlistItemIdNum = Math.floor((yPosition - listingsTopPos) / itemHeight);
+    let playlist = document.elementFromPoint(0, yPosition).id;
 
     // Highlight the playlist marked by the cursor
-    $('#item' + playlistItemIdNum.toString()).addClass('active');
+    $('#' + playlist).addClass('active');
 
     // Report the highlighted playlist name
-    $(TEXT_SELECTOR).text($('#item' + playlistItemIdNum.toString()).text());
+    $(TEXT_SELECTOR).text($('#' + playlist).text());
   }
 }
 
