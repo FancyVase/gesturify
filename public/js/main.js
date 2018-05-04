@@ -1,14 +1,18 @@
 // Setting up global variables
 let play;
 var prevGestureTime = new Date().getTime();
+var prevPlaylistTime = new Date().getTime();
 var addToPlaylistMode = false;
 var changeVolumeMode = false;
 let access_token;
+let selectedPlaylist;
+let currentTrackUri;
 
 // Constants
 const MS_TO_S = 1000;
 const GESTURE_DELAY = 2 * MS_TO_S;
 const SEEK_TIME = 10 * MS_TO_S;
+const SELECT_PLAYLIST_DELAY = 2 * MS_TO_S;
 const VOLUME_MAX_POS = -200;
 const VOLUME_MIN_POS = 400;
 
@@ -89,9 +93,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
   const player = setUpPlayer(access_token); // device_id === player.device_id
 
   // Retrive current track details
-  player.on('player_state_changed', ({ paused, track_window: { current_track: { name, artists } } }) => {
+  player.on('player_state_changed', ({ paused, track_window: { current_track: { name, artists, uri } } }) => {
     play = !paused;
     $(SONG_TEXT_SELECTOR).text(name);
+    currentTrackUri = uri;
     $(ARTIST_TEXT_SELECTOR).text(artists[0].name);
   });
 
@@ -112,7 +117,16 @@ window.onSpotifyWebPlaybackSDKReady = () => {
       var hand = frame.hands[0];
 
       if (addToPlaylistMode) {
-        selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight);
+        let newPlaylist = selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight);
+        if (newPlaylist != selectedPlaylist) {
+          selectedPlaylist = newPlaylist;
+          updatePrevPlaylistTime();
+        } else if (selectedPlaylist != "" && currentTime - prevPlaylistTime > SELECT_PLAYLIST_DELAY) {
+          addTracksToPlaylist(user_id, selectedPlaylist, [currentTrackUri], access_token);
+          selectedPlaylist = "";
+          $(TEXT_SELECTOR).text('Song added!');
+          togglePlaylistMode();
+        }
       } else if (changeVolumeMode) {
         changeVolume(hand, player);
       } else {
@@ -238,6 +252,7 @@ function toggleVolumeMode() {
  * @param {number} listingsTopPos The y-coordinate of the start of the list of playlists relative to the document, in pixels.
  * @param {number} listingsHeight The total height of the list of playlists, in pixels.
  * @param {number} itemHeight The height of one playlist item, in pixels.
+ * @returns {string} playlist The ID of the playlist selected.
  */
 function selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight) {
   var handPosition = hand.screenPosition();
@@ -260,7 +275,10 @@ function selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight) {
 
     // Report the highlighted playlist name
     $(TEXT_SELECTOR).text($('#' + playlist).text());
+
+    return playlist;
   }
+  return '';
 }
 
 /**
@@ -302,6 +320,15 @@ function updateTextAndTime() {
 function updatePrevGestureTime() {
   prevGestureTime = new Date().getTime();
 }
+
+/**
+ * Records the time of the last selected playlist.
+ */
+function updatePrevPlaylistTime() {
+  prevPlaylistTime = new Date().getTime();
+}
+
+
 
 /**
  * Resets the styling of the playlists.
@@ -386,6 +413,11 @@ var processSpeech = function(transcript) {
         console.error(e);
       }
     } 
+  }
+
+  else if (userSaid(transcript, ['add to playlist'])) {
+    togglePlaylistMode();
+    console.log('hi');
   }
 
 
