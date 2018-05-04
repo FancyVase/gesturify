@@ -96,6 +96,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     // reset text
     if (numHands == 0) {
       $(TEXT_SELECTOR).text('');
+      if (changeVolumeMode) {
+        $(TEXT_SELECTOR).text('Volume')
+      }
     }
 
     // recognize one-handed gestures
