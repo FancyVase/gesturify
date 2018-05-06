@@ -4,42 +4,15 @@ var prevGestureTime = new Date().getTime();
 var prevPlaylistTime = new Date().getTime();
 var addToPlaylistMode = false;
 var changeVolumeMode = false;
+let addSongCommand = false;
 let access_token;
 let selectedPlaylist;
 let currentTrackUri;
-
-// Constants
-const MS_TO_S = 1000;
-const GESTURE_DELAY = 2 * MS_TO_S;
-const SEEK_TIME = 10 * MS_TO_S;
-const SELECT_PLAYLIST_DELAY = 2 * MS_TO_S;
-const VOLUME_MAX_POS = -200;
-const VOLUME_MIN_POS = 400;
-
-// Spotify States/ Types
-const SPOTIFY_TYPE = { ALBUM: "album", ARTIST: "artist", PLAYLIST: "playlist", TRACK: "track" };
-const REPEAT_STATE = { TRACK: "track", CONTEXT: "context", OFF: "off" };
-const SHUFFLE_STATE = { ON: true, OFF: false };
-
-// Selectors
-const TEXT_SELECTOR = '#gesture-text';
-const SIDEBAR_SELECTOR = 'div#sidebar';
-const MENU_SELECTOR = '.menu.listings';
-const PLAYLIST_ITEM_SELECTOR = '.playlist-item';
-const CURSOR_SELECTOR = '.circle.icon';
-const SONG_TEXT_SELECTOR = '#song-title';
-const ARTIST_TEXT_SELECTOR = '#artist';
-const PLAYLIST_TEMPLATE = '#playlist-template';
 
 // Controller options for the Leap Motion
 const controllerOptions = { enableGestures: true, background: true };
 
 window.onSpotifyWebPlaybackSDKReady = () => {
-  // Values for playlist task
-  let listingsTopPos;
-  let listingsHeight;
-  let itemHeight;
-  let numItems;
 
   // Retrieving Spotify user info and credentials
   var params = getHashParams();
@@ -51,46 +24,13 @@ window.onSpotifyWebPlaybackSDKReady = () => {
   if (error) {
     throw new Error('There was an error during the authentication');
   }
-  if (access_token) {
-    $.ajax({
-      url: 'https://api.spotify.com/v1/me',
-      headers: {
-        'Authorization': 'Bearer ' + access_token
-      },
-      success: function (response) {
-        $('#login').hide();
-        $('#loggedin').show();
-      }
-    });
-
-    // Load playlists
-    $.ajax({
-      url: 'https://api.spotify.com/v1/me/playlists',
-      data: { limit: 50 },
-      headers: {
-        'Authorization': 'Bearer ' + access_token
-      },
-      success: function (response) {
-        var playlists = response.items.map(item => { return { name: item.name, id: item.id } });
-        var templateScript = $(PLAYLIST_TEMPLATE).html(); 
-         //Compile the template​
-        var template = Handlebars.compile(templateScript); 
-        $(".listings").append(template(playlists)); 
-
-        listingsTopPos = $(MENU_SELECTOR).offset().top;
-        listingsHeight = $(MENU_SELECTOR).outerHeight();
-        itemHeight = $(PLAYLIST_ITEM_SELECTOR).outerHeight();
-        numItems = $(PLAYLIST_ITEM_SELECTOR).length;
-      }
-    });
-  } else {
-    // render initial screen
-    $('#login').show();
-    $('#loggedin').hide();
-  }
 
   getUserDetails(access_token);
   const player = setUpPlayer(access_token); // device_id === player.device_id
+  loadPlaylists(access_token);
+
+  // Values for playlist task
+  let listingsTopPos = $(MENU_SELECTOR).offset().top;
 
   // Retrive current track details
   player.on('player_state_changed', ({ paused, track_window: { current_track: { name, artists, uri } } }) => {
@@ -117,13 +57,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
       var hand = frame.hands[0];
 
       if (addToPlaylistMode) {
-        let newPlaylist = selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight);
-        if (newPlaylist != selectedPlaylist) {
-          selectedPlaylist = newPlaylist;
-          updatePrevPlaylistTime();
-        } else if (selectedPlaylist != "" && currentTime - prevPlaylistTime > SELECT_PLAYLIST_DELAY) {
+        let selectedPlaylist = selectPlaylist(hand, listingsTopPos);
+        if (addSongCommand) {
+          addSongCommand = false;
           addTracksToPlaylist(user_id, selectedPlaylist, [currentTrackUri], access_token);
-          selectedPlaylist = "";
           $(TEXT_SELECTOR).text('Song added!');
           togglePlaylistMode();
         }
@@ -250,17 +187,14 @@ function toggleVolumeMode() {
  * Updates the position of the cursor.
  * @param {Hand} hand The physical characteristics of the detected hand.
  * @param {number} listingsTopPos The y-coordinate of the start of the list of playlists relative to the document, in pixels.
- * @param {number} listingsHeight The total height of the list of playlists, in pixels.
- * @param {number} itemHeight The height of one playlist item, in pixels.
  * @returns {string} playlist The ID of the playlist selected.
  */
-function selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight) {
+function selectPlaylist(hand, listingsTopPos) {
   var handPosition = hand.screenPosition();
   var yPosition = handPosition[1];
-  resetPlaylistAppearance();
 
   let scrollOffset = $(SIDEBAR_SELECTOR).scrollTop();
-
+  console.log(listingsTopPos);
   // Only update the position of the cursor if hand's position is within the region with
   // playlist items
   if (yPosition - listingsTopPos > 0) {
@@ -270,13 +204,18 @@ function selectPlaylist(hand, listingsTopPos, listingsHeight, itemHeight) {
     // Determine which playlist the cursor is over
     let playlist = document.elementFromPoint(0, yPosition).id;
 
-    // Highlight the playlist marked by the cursor
-    $('#' + playlist).addClass('active');
+    if (playlist) {
 
-    // Report the highlighted playlist name
-    $(TEXT_SELECTOR).text($('#' + playlist).text());
+      resetPlaylistAppearance();
+      // Highlight the playlist marked by the cursor
+      $('#' + playlist).addClass('active');
 
-    return playlist;
+      // Report the highlighted playlist name
+      $(TEXT_SELECTOR).text($('#' + playlist).text());
+
+      return playlist;
+    }
+    return '';
   }
   return '';
 }
@@ -296,12 +235,12 @@ function changeVolume(hand, player) {
     var volume = Math.round(((yPosition - VOLUME_MIN_POS) / (VOLUME_MAX_POS - VOLUME_MIN_POS)) * 100);
     player.setVolume(volume / 100).then(() => {
       $(TEXT_SELECTOR).text("Volume: " + volume + "%");
-      updateTextAndTime();
+      resetText();
     });
   } else if (yPosition < VOLUME_MAX_POS && openHand) {
     player.setVolume(1).then(() => {
       $(TEXT_SELECTOR).text("Volume: 100%");
-      updateTextAndTime();
+      resetText();
     });
   }
 }
@@ -356,10 +295,10 @@ function resetText() {
  * Input: transcript, a string of possibly multiple words that were recognized
  * Output: processed, a boolean indicating whether the system reacted to the speech or not
  */
-var processSpeech = function(transcript) {
+var processSpeech = function (transcript) {
   transcript = transcript.toLowerCase();
   // Helper function to detect if any commands appear in a string
-  var userSaid = function(str, commands) {
+  var userSaid = function (str, commands) {
     for (var i = 0; i < commands.length; i++) {
       if (str.indexOf(commands[i]) > -1)
         return true;
@@ -373,9 +312,15 @@ var processSpeech = function(transcript) {
 
   var processed = false;
 
-  if (userSaid(transcript, ['volume'])) {
+  if (userSaid(transcript, ['change volume'])) {
     toggleVolumeMode();
-    updateTextAndTime();
+    resetText();
+    processed = true;
+  }
+
+  else if (userSaid(transcript, ['set volume'])) {
+    toggleVolumeMode();
+    resetText();
     processed = true;
   }
 
@@ -384,7 +329,7 @@ var processSpeech = function(transcript) {
       let words = transcript.split(" ");
       try {
         let typeIndex = words.indexOf('album');
-        search(words.slice(typeIndex+1).join(' '), 'album', access_token);
+        search(words.slice(typeIndex + 1).join(' '), 'album', access_token);
       } catch (e) {
         console.error(e);
       }
@@ -392,7 +337,7 @@ var processSpeech = function(transcript) {
       let words = transcript.split(" ");
       try {
         let typeIndex = words.indexOf('artist');
-        search(words.slice(typeIndex+1).join(' '), 'artist', access_token);
+        search(words.slice(typeIndex + 1).join(' '), 'artist', access_token);
       } catch (e) {
         console.error(e);
       }
@@ -400,7 +345,7 @@ var processSpeech = function(transcript) {
       let words = transcript.split(" ");
       try {
         let typeIndex = words.indexOf('playlist');
-        search(words.slice(typeIndex+1).join(' '), 'playlist', access_token);
+        search(words.slice(typeIndex + 1).join(' '), 'playlist', access_token);
       } catch (e) {
         console.error(e);
       }
@@ -408,16 +353,15 @@ var processSpeech = function(transcript) {
       let words = transcript.split(" ");
       try {
         let typeIndex = words.indexOf('song') > -1 ? words.indexOf('song') : words.indexOf('track');
-        search(words.slice(typeIndex+1).join(' '), 'track', access_token);
+        search(words.slice(typeIndex + 1).join(' '), 'track', access_token);
       } catch (e) {
         console.error(e);
       }
-    } 
+    }
   }
 
-  else if (userSaid(transcript, ['add to playlist'])) {
-    togglePlaylistMode();
-    console.log('hi');
+  else if (userSaid(transcript, ['add this song to that playlist'])) {
+    addSongCommand = true;
   }
 
 

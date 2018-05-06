@@ -2,117 +2,126 @@
 <html>
 
 <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Gestures + Speech + Spotify to maximize productivity and reduce context-switching.">
-    <meta name="keywords" content="gestures, speech, spotify, productivity, context-free">
-    <meta name="author" content="Maryam Archie, Hiram Moncivais">
-    <title>Gesturify</title>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Gestures + Speech + Spotify to maximize productivity and reduce context-switching.">
+  <meta name="keywords" content="gestures, speech, spotify, productivity, context-free">
+  <meta name="author" content="Maryam Archie, Hiram Moncivais">
+  <title>Gesturify</title>
 
-    <!-- CSS -->
-    <link rel="stylesheet" type="text/css" href="css/semantic.min.css">
-    <link rel="stylesheet" type="text/css" href="css/main.css" />
-    <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
+  <!-- CSS -->
+  <link rel="stylesheet" type="text/css" href="css/semantic.min.css">
+  <link rel="stylesheet" type="text/css" href="css/main.css" />
+  <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
 
-    <!-- jQuery -->
-    <script type="text/javascript" src="lib/jquery.min.js"></script>
+  <!-- jQuery -->
+  <script type="text/javascript" src="lib/jquery.min.js"></script>
 
-    <!-- Semantic UI -->
-    <script type="text/javascript" src="lib/semantic.min.js"></script>
+  <!-- Semantic UI -->
+  <script type="text/javascript" src="lib/semantic.min.js"></script>
 
-    <!-- Leap -->
-    <script type="text/javascript" src="lib/leap.min.js"></script>
-    <script type="text/javascript" src="lib/leap-plugins.min.js"></script>
+  <!-- Leap -->
+  <script type="text/javascript" src="lib/leap.min.js"></script>
+  <script type="text/javascript" src="lib/leap-plugins.min.js"></script>
 
-    <!-- Underscore -->
-    <script type="text/javascript" src="lib/underscore.min.js"></script>
+  <!-- Underscore -->
+  <script type="text/javascript" src="lib/underscore.min.js"></script>
 
-    <!-- Spotify Web Playback SDK -->
-    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+  <!-- Spotify Web Playback SDK -->
+  <script src="https://sdk.scdn.co/spotify-player.js"></script>
 
-    <!-- Handlebars -->
-    <script type="text/javascript" src="lib/handlebars.min-latest.js"></script>
+  <!-- Handlebars -->
+  <script type="text/javascript" src="lib/handlebars.min-latest.js"></script>
 
-    <!-- App code -->
-    <script type="text/javascript" src="js/spotify.js"></script>
-    <script type="text/javascript" src="js/gestures.js"></script>
-    <script type="text/javascript" src="js/main.js"></script>
-    <script type="text/javascript" src="js/setupSpeech.js"></script>
+  <!-- App code -->
+  <script type="text/javascript" src="js/spotify.js"></script>
+  <script type="text/javascript" src="js/gestures.js"></script>
+  <script type="text/javascript" src="js/main.js"></script>
+  <script type="text/javascript" src="js/setupSpeech.js"></script>
+  <script type="text/javascript" src="js/constants.js"></script>
 
 </head>
 
 <body>
-    <div class="ui container">
-        <div id="login">
-            <div class="pusher">
-                <div class="ui middle aligned one column centered grid">
-                    <div class="row">
-                        <div class="column">
-                            <h1 id="login-title">Gesturify</h1>
-                            <div id="login-button">
-                                <a href="/login" class="ui primary button">Log in with Spotify</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+  <div class="ui container">
+    <div id="login">
+      <div class="pusher">
+        <div class="ui middle aligned one column centered grid">
+          <div class="row">
+            <div class="column">
+              <h1 id="login-title">Gesturify</h1>
+              <div id="login-button">
+                <a href="/login" class="ui primary button">Log in with Spotify</a>
+              </div>
             </div>
+          </div>
         </div>
+      </div>
     </div>
-    <div id="loggedin" class="hide">
-        <div class="ui sidebar visible inverted vertical menu" id="sidebar">
-            <i class="disabled circle icon"></i>
-            <div class="item name">
-                <b>Gesturify</b>
-            </div>
-            <div class="item">
-                <div class="playlist-header">
-                    <b>Playlists</b>
-                </div>
-                <div class="menu listings">
-                    <script id="playlist-template" type="x-handlebars-template">
+  </div>
+  <div id="loggedin" class="hide">
+    <div class="ui sidebar visible inverted vertical menu" id="sidebar">
+      <i class="disabled circle icon"></i>
+      <div class="item name">
+        <b>Gesturify</b>
+      </div>
+      <div class="item">
+        <div class="playlist-header">
+          <b>Playlists</b>
+        </div>
+        <div class="menu listings">
+          <script id="playlist-template" type="x-handlebars-template">
                         {{#each this}}
                         <a class="item playlist-item" id="{{id}}">
                             {{name}}
                         </a>
                         {{/each}}
                     </script>
-                </div>
-            </div>
-            <div class="ui buttons">
-                <button class="ui left attached button playlist" onclick="togglePlaylistMode()">Add to Playlist</button>
-                <button class="ui right attached button playlist disabled" onclick="togglePlaylistMode()">Control Player</button>
-            </div>
-            <div class="ui buttons">
-                <button class="ui left attached button volume" onclick="toggleVolumeMode()">Change Volume</button>
-                <button class="ui right attached button volume disabled" onclick="toggleVolumeMode()">Control Player</button>
-            </div>
         </div>
+      </div>
+    </div>
 
-        <div class="pusher">
-            <div class="ui middle aligned one column centered grid">
-                <div class="row">
-                    <div class="column">
-                        <h1 id="post-login-title">Gesturify</h1>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="column">
-                        <div id="gesture-text"></div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="column">
-                        <div id="song-text">Current track:
-                            <span id="song-title"></span>
-                        </div>
-                        <div id="artist"></div>
-                    </div>
-                </div>
-            </div>
+    <div class="pusher">
+      <div class="ui middle aligned one column centered grid">
+        <div class="row">
+          <div class="column">
+            <h1 id="post-login-title">Gesturify</h1>
+          </div>
         </div>
+        <div class="row">
+          <div class="column">
+            <div id="gesture-text"></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="column">
+            <div id="song-text">Current track:
+              <span id="song-title"></span>
+            </div>
+            <div id="artist"></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="column">
+            <div class="ui buttons">
+              <button class="ui left attached button playlist" onclick="togglePlaylistMode()">Add to Playlist</button>
+              <button class="ui right attached button playlist disabled" onclick="togglePlaylistMode()">Control Player</button>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="column">
+            <div class="ui buttons">
+              <button class="ui left attached button volume" onclick="toggleVolumeMode()">Change Volume</button>
+              <button class="ui right attached button volume disabled" onclick="toggleVolumeMode()">Control Player</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    </div>
+  </div>
+  </div>
 </body>
 
 </html>

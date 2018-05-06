@@ -41,6 +41,10 @@ body {
     margin-left: 20%;
 }
 
+.pusher .ui.grid .row .column #artist {
+    margin-bottom: 5%;
+}
+
 .pusher .ui.grid .row .column #post-login-title {
     text-align: center;
     margin-top: 100px;
@@ -64,9 +68,9 @@ body {
     right: 0%;
 }
 
-.ui.buttons {
-    margin-top: 20px;
-    margin-left: 5%;
+.pusher .ui.grid .row .column .ui.buttons {
+    text-align: center;
+    margin-left: 52.5%;
 }
 
 #song-text {

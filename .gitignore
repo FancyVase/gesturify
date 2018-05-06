@@ -1,3 +1,4 @@
 # Comment out if keys changed
 app.js
 node_modules
+.vscode
