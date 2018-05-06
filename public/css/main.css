@@ -4,6 +4,14 @@ body {
     font-family: 'Lato', sans-serif;
 }
 
+.description {
+    color: black;
+}
+
+.command {
+    font-weight: bold;
+}
+
 .hide {
     display: none;
 }
@@ -43,6 +51,11 @@ body {
 
 .pusher .ui.grid .row .column #artist {
     margin-bottom: 5%;
+}
+
+.pusher .ui.grid .row .column #info-button {
+    margin-top: 2%;
+    margin-left: 92.5%;
 }
 
 .pusher .ui.grid .row .column #post-login-title {

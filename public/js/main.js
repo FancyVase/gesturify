@@ -182,6 +182,10 @@ function toggleVolumeMode() {
   changeVolumeMode = !changeVolumeMode;
 }
 
+function showModal() {
+  $('.ui.modal').modal('show');
+}
+
 /**
  * Determines what playlist the user wants to add a song to based on his/her hand's position.
  * Updates the position of the cursor.
