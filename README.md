@@ -35,5 +35,5 @@ Once you have created your app, replace the `client_id`, `redirect_uri` and `cli
 | Play/ Pause          | Extend the hand out to play/ pause the current song if paused/ playing. |
 | Next/ Previous Song  | Close hand and extend thumb left to skip to the next song or to the right to skip to the previous song. |
 | Volume Control       | Say "change volume" and then swipe up to raise the volume or down to lower it. Close your fist or say "set volume" to exit volume mode. |
-| Search               |  Say "search" followed by the type of item you’re searching for. You can search for a "song", "artist", "album", or "playlist". Afterwards say your search query. Example: *Search song Stay Frost Royal Milk Tea* |
+| Search               |  Say "search" followed by the type of item you’re searching for. You can search for a "song", "artist", "album", or "playlist". Afterwards say your search query. Example: *Search song Stay Frosty Royal Milk Tea* |
 | Add Current Song to Playlist | In the Gesturify user interface, click the `Add To Playlist` button, point to a playlist and say "Add this song to that playlist".|
