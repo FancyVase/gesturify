@@ -316,13 +316,7 @@ var processSpeech = function (transcript) {
 
   var processed = false;
 
-  if (userSaid(transcript, ['change volume'])) {
-    toggleVolumeMode();
-    resetText();
-    processed = true;
-  }
-
-  else if (userSaid(transcript, ['set volume'])) {
+  if (userSaid(transcript, ['volume'])) {
     toggleVolumeMode();
     resetText();
     processed = true;
