@@ -148,38 +148,28 @@ window.onSpotifyWebPlaybackSDKReady = () => {
  * Toggles between the ability to select a playlist or make gestures to control the player.
  */
 function togglePlaylistMode() {
-  if (!changeVolumeMode) {
-    if (addToPlaylistMode) {
-      $('.ui.left.attached.button.playlist').removeClass('disabled');
-      $('.ui.left.attached.button.volume').removeClass('disabled');
-      $('.ui.right.attached.button.playlist').addClass('disabled');
-    } else {
-      $('.ui.left.attached.button.playlist').addClass('disabled');
-      $('.ui.left.attached.button.volume').addClass('disabled');
-      $('.ui.right.attached.button.playlist').removeClass('disabled');
-      $('.ui.right.attached.button.volume').addClass('disabled');
-    }
-  }
-  addToPlaylistMode = !addToPlaylistMode;
+  $('.ui.button.playlist').addClass('disabled');
+  $('.ui.button.volume').addClass('disabled');
+  $('.ui.button.controller').removeClass('disabled');
+  addToPlaylistMode = true;
 }
 
 /**
  * Toggles between the ability to change the volume of the player.
  */
 function toggleVolumeMode() {
-  if (!addToPlaylistMode) {
-    if (changeVolumeMode) {
-      $('.ui.left.attached.button.volume').removeClass('disabled');
-      $('.ui.left.attached.button.playlist').removeClass('disabled');
-      $('.ui.right.attached.button.volume').addClass('disabled');
-    } else {
-      $('.ui.left.attached.button.playlist').addClass('disabled');
-      $('.ui.left.attached.button.volume').addClass('disabled');
-      $('.ui.right.attached.button.volume').removeClass('disabled');
-      $('.ui.right.attached.button.playlist').addClass('disabled');
-    }
-  }
-  changeVolumeMode = !changeVolumeMode;
+  $('.ui.button.playlist').addClass('disabled');
+  $('.ui.button.volume').addClass('disabled');
+  $('.ui.button.controller').removeClass('disabled');
+  changeVolumeMode = true;
+}
+
+function toggleMode() {
+  $('.ui.button.playlist').removeClass('disabled');
+  $('.ui.button.volume').removeClass('disabled');
+  $('.ui.button.controller').addClass('disabled');
+  addToPlaylistMode = false;
+  changeVolumeMode = false;
 }
 
 function showModal() {
@@ -233,6 +223,10 @@ function changeVolume(hand, player) {
   var handPosition = hand.screenPosition();
   var yPosition = handPosition[1];
   var openHand = (hand.thumb.extended && hand.indexFinger.extended && hand.middleFinger.extended && hand.ringFinger.extended && hand.pinky.extended);
+
+  if (!openHand && hand.grabStrength === 1) {
+    toggleMode();
+  }
 
   // Change the volume if the hand is open and its vertical position is in [VOLUME_MIN, VOLUME_MAX] range
   if (yPosition > VOLUME_MAX_POS && yPosition < VOLUME_MIN_POS && openHand) {
