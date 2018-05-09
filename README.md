@@ -7,6 +7,8 @@ Maximize productivity with gestures + speech + Spotify
 ## Requirements
 - [Node.js + npm](https://nodejs.org/en/)
 - A Spotify Premium account - Spotify only allows playback control of Premium accounts. You can sign up for a [30 day free trial](https://www.spotify.com/premium/) if you want to test our app here.
+- Leap Motion Controller
+- Microphone
 
 ### Using your own credentials: 
 (*Adapted from [Spotify's Web Authentication Examples](https://github.com/spotify/web-api-auth-examples)*)
