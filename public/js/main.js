@@ -1,12 +1,11 @@
 // Setting up global variables
 let play;
 var prevGestureTime = new Date().getTime();
-var prevPlaylistTime = new Date().getTime();
 var addToPlaylistMode = false;
 var changeVolumeMode = false;
 let addSongCommand = false;
 let access_token;
-let selectedPlaylist;
+let user_id;
 let currentTrackUri;
 
 // Controller options for the Leap Motion
@@ -47,8 +46,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     // reset text
     if (numHands == 0) {
       $(TEXT_SELECTOR).text('');
+
       if (changeVolumeMode) {
-        $(TEXT_SELECTOR).text('Volume')
+        $(TEXT_SELECTOR).text('Volume');
       }
     }
 
@@ -92,45 +92,41 @@ window.onSpotifyWebPlaybackSDKReady = () => {
           // Detect skip to next track gesture
           else if (detectNextTrackGesture(hand)) {
             player.nextTrack().then(() => {
-              $(TEXT_SELECTOR).text("Play Next Song");
+              $(TEXT_SELECTOR).text('Play Next Song');
               updateTextAndTime();
             });
-            console.log("Play Next Song");
           }
 
           // Detect skip to previous track gesture
           else if (detectPreviousTrackGesture(hand)) {
             player.previousTrack().then(() => {
-              $(TEXT_SELECTOR).text("Play Previous Song");
+              $(TEXT_SELECTOR).text('Play Previous Song');
               updateTextAndTime();
             });
-            console.log("Play Previous Song");
           }
 
           else if (frame.valid && frame.gestures.length > 0) {
             frame.gestures.forEach(function (gesture) {
-              switch (gesture.type) {
-                case "circle":
-                  // Detect Seek Gesture
-                  const clockwise = detectCircleDirection(frame, gesture);
-                  player.getCurrentState().then(state => {
-                    if (!state) {
-                      return;
-                    }
-                    const songPosition = state.position;
-                    if (clockwise) {
-                      player.seek(songPosition + SEEK_TIME).then(() => {
-                        $(TEXT_SELECTOR).text("Fast Forward Song");
-                        console.log(`Changed position by ${SEEK_TIME}!`);
-                      });
-                    } else {
-                      player.seek(songPosition - SEEK_TIME).then(() => {
-                        $(TEXT_SELECTOR).text("Rewind Song");
-                        console.log(`Changed position by -${SEEK_TIME}!`);
-                      });
-                    }
-                  });
-                  break;
+              if (gesture.type === 'circle') {
+                // Detect Seek Gesture
+                const clockwise = detectCircleDirection(frame, gesture);
+                player.getCurrentState().then(state => {
+                  if (!state) {
+                    return;
+                  }
+                  const songPosition = state.position;
+                  if (clockwise) {
+                    player.seek(songPosition + SEEK_TIME).then(() => {
+                      $(TEXT_SELECTOR).text('Fast Forward Song');
+                      console.log(`Changed position by ${SEEK_TIME}!`);
+                    });
+                  } else {
+                    player.seek(songPosition - SEEK_TIME).then(() => {
+                      $(TEXT_SELECTOR).text('Rewind Song');
+                      console.log(`Changed position by -${SEEK_TIME}!`);
+                    });
+                  }
+                });
               }
             });
           }
@@ -138,7 +134,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
       }
     } else {
       // warn user
-      $(TEXT_SELECTOR).text("Only use one hand!");
+      $(TEXT_SELECTOR).text('Only use one hand!');
     }
   }).use('screenPosition', { scale: 0.5 });
 };
@@ -232,12 +228,12 @@ function changeVolume(hand, player) {
   if (yPosition > VOLUME_MAX_POS && yPosition < VOLUME_MIN_POS && openHand) {
     var volume = Math.round(((yPosition - VOLUME_MIN_POS) / (VOLUME_MAX_POS - VOLUME_MIN_POS)) * 100);
     player.setVolume(volume / 100).then(() => {
-      $(TEXT_SELECTOR).text("Volume: " + volume + "%");
+      $(TEXT_SELECTOR).text('Volume: ' + volume + '%');
       resetText();
     });
   } else if (yPosition < VOLUME_MAX_POS && openHand) {
     player.setVolume(1).then(() => {
-      $(TEXT_SELECTOR).text("Volume: 100%");
+      $(TEXT_SELECTOR).text('Volume: 100%');
       resetText();
     });
   }
@@ -257,15 +253,6 @@ function updateTextAndTime() {
 function updatePrevGestureTime() {
   prevGestureTime = new Date().getTime();
 }
-
-/**
- * Records the time of the last selected playlist.
- */
-function updatePrevPlaylistTime() {
-  prevPlaylistTime = new Date().getTime();
-}
-
-
 
 /**
  * Resets the styling of the playlists.
@@ -318,7 +305,7 @@ var processSpeech = function (transcript) {
 
   else if (userSaid(transcript, ['search'])) {
     if (userSaid(transcript, ['album'])) {
-      let words = transcript.split(" ");
+      let words = transcript.split(' ');
       try {
         let typeIndex = words.indexOf('album');
         search(words.slice(typeIndex + 1).join(' '), 'album', access_token);
@@ -326,7 +313,7 @@ var processSpeech = function (transcript) {
         console.error(e);
       }
     } else if (userSaid(transcript, ['artist'])) {
-      let words = transcript.split(" ");
+      let words = transcript.split(' ');
       try {
         let typeIndex = words.indexOf('artist');
         search(words.slice(typeIndex + 1).join(' '), 'artist', access_token);
@@ -334,7 +321,7 @@ var processSpeech = function (transcript) {
         console.error(e);
       }
     } else if (userSaid(transcript, ['playlist'])) {
-      let words = transcript.split(" ");
+      let words = transcript.split(' ');
       try {
         let typeIndex = words.indexOf('playlist');
         search(words.slice(typeIndex + 1).join(' '), 'playlist', access_token);
@@ -342,7 +329,7 @@ var processSpeech = function (transcript) {
         console.error(e);
       }
     } else if (userSaid(transcript, ['song', 'track'])) {
-      let words = transcript.split(" ");
+      let words = transcript.split(' ');
       try {
         let typeIndex = words.indexOf('song') > -1 ? words.indexOf('song') : words.indexOf('track');
         search(words.slice(typeIndex + 1).join(' '), 'track', access_token);
