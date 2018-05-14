@@ -23,9 +23,9 @@ function detectCircleDirection(frame, gesture) {
 function detectPlayPauseGesture(hand) {
     var pitch = hand.pitch();
     var grabStrength = hand.grabStrength;
-
     var openHand = grabStrength < 0.25;
     var verticalHand = (pitch > 1.15 && pitch < 2);
+
     return openHand && verticalHand;
 }
 
@@ -38,7 +38,6 @@ function detectPlayPauseGesture(hand) {
 function detectNextTrackGesture(hand) {
     // Check that thumb is pointing right.
     var pointRight = hand.pointables[0].direction[0] > 0;
-
     var closedHand = hand.grabStrength > 0.75;
 
     return closedHand && hand.thumb.extended && pointRight;
@@ -53,35 +52,7 @@ function detectNextTrackGesture(hand) {
 function detectPreviousTrackGesture(hand) {
     // Check that thumb is pointing left.
     var pointLeft = hand.pointables[0].direction[0] < 0;
-
-    console.log(hand.grabStrength);
     var closedHand = hand.grabStrength > 0.75;
 
     return closedHand && hand.thumb.extended && pointLeft;
-}
-
-/**
- * Determines if the user is indicating to save the current song to the user's library.
- * To do this, the user must make a thumbs up gesture.
- * @param {Hand} hand The physical characteristics of the detected hand.
- * @returns True if the hand is making a thumbs up gesture, False otherwise.
- */
-function detectThumbsUpGesture(hand) {
-    var thumbExtended = hand.thumb.extended;
-    var thumbUpright = hand.thumb.direction[1] > 0.4;
-    var closedFingers = (hand.indexFinger.extended || hand.middleFinger.extended || hand.ringFinger.extended || hand.pinky.extended);
-
-    return thumbExtended && !closedFingers && thumbUpright;
-}
-
-/**
- * Determines if the user is indicating to search for a song.
- * To do this, the user must make a closed fist gesture.
- * @param {Hand} hand The physical characteristics of the detected hand.
- * @returns True if the hand is making a closed fist gesture, False otherwise.
- */
-function detectFistGesture(hand) {
-    var closedFingers = (hand.thumb.extended || hand.indexFinger.extended || hand.middleFinger.extended || hand.ringFinger.extended || hand.pinky.extended);
-
-    return !closedFingers && (hand.grabStrength === 1);
 }

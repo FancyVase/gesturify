@@ -42,33 +42,16 @@ function getUserDetails(access_token) {
   }
 }
 
-function loadPlaylists(access_token) {
-  $.ajax({
-    url: 'https://api.spotify.com/v1/me/playlists',
-    data: { limit: 50 },
-    headers: {
-      'Authorization': 'Bearer ' + access_token
-    },
-    success: function (response) {
-      var playlists = response.items.map(item => { return { name: item.name, id: item.id } });
-      var templateScript = $(PLAYLIST_TEMPLATE).html();
-      //Compile the template​
-      var template = Handlebars.compile(templateScript);
-      $(MENU_SELECTOR).append(template(playlists));
-    }
-  });
-}
-
 /**
  * Initializes the Spotify Player
- * @param {string} accessToken A valid access token from the Spotify Accounts service
+ * @param {string} access_token A valid access token from the Spotify Accounts service
  * @returns {Spotify.Player} the instance of the Gesturify player
  * @see https://beta.developer.spotify.com/documentation/web-playback-sdk/quick-start/
  */
-function setUpPlayer(accessToken) {
+function setUpPlayer(access_token) {
   const player = new Spotify.Player({
     name: 'Gesturify',
-    getOAuthToken: cb => { cb(accessToken); }
+    getOAuthToken: cb => { cb(access_token); }
   });
 
   // Error handling
@@ -93,28 +76,22 @@ function setUpPlayer(accessToken) {
 
 /**
  * Get a list of the playlists owned or followed by the current Spotify user.
- * @param {string} accessToken A valid access token from the Spotify Accounts service 
+ * @param {string} access_token A valid access token from the Spotify Accounts service 
  * @see https://beta.developer.spotify.com/documentation/web-api/reference/playlists/get-a-list-of-current-users-playlists/
  */
-function getUserPlaylists(access_token) {
+function loadPlaylists(access_token) {
   $.ajax({
     url: 'https://api.spotify.com/v1/me/playlists',
+    data: { limit: 50 },
     headers: {
       'Authorization': 'Bearer ' + access_token
     },
     success: function (response) {
-      // NOTE: use playlist id as html id
-      const playlists = response.items.map((playlist) => {
-        return {
-          id: playlist.id,
-          name: playlist.name
-        }
-      });
-
-      console.log(playlists);
-    },
-    error: function (err) {
-      console.log(err);
+      var playlists = response.items.map(item => { return { name: item.name, id: item.id } });
+      var templateScript = $(PLAYLIST_TEMPLATE).html();
+      //Compile the template​
+      var template = Handlebars.compile(templateScript);
+      $(MENU_SELECTOR).append(template(playlists));
     }
   });
 }
@@ -131,7 +108,7 @@ function getUserPlaylists(access_token) {
  *                    The resource identifier that you can enter, for example, in the 
  *                    Spotify Desktop client’s search box to locate an artist, album, or track.
  *                    (e.g. spotify:track:6rqhFgbbKwnb9MLmUQDhG6)
- * @param {string} accessToken A valid access token from the Spotify Accounts service 
+ * @param {string} access_token A valid access token from the Spotify Accounts service 
  * @see https://beta.developer.spotify.com/documentation/web-api/reference/playlists/add-tracks-to-playlist/
  */
 function addTracksToPlaylist(user_id, playlist_id, track_uris, access_token) {
@@ -159,7 +136,7 @@ function addTracksToPlaylist(user_id, playlist_id, track_uris, access_token) {
  *                          keywords are matched in any order. Only popular playlists returned
  *                          if type===playlist.
  * @param {string} type See SPOTIFY_TYPE
- * @param {string} accessToken A valid access token from the Spotify Accounts service 
+ * @param {string} access_token A valid access token from the Spotify Accounts service 
  * @see https://beta.developer.spotify.com/documentation/web-api/reference/search/search/
  */
 function search(keywords, type, access_token) {
@@ -193,7 +170,7 @@ function search(keywords, type, access_token) {
  * Start a new context on the user’s active device.
  * @param {string} type See SPOTIFY_TYPE
  * @param {string[]} uris if album/artist/playlist, uris.length === 1 * 
- * @param {string} accessToken A valid access token from the Spotify Accounts service 
+ * @param {string} access_token A valid access token from the Spotify Accounts service 
  * @see https://beta.developer.spotify.com/documentation/web-api/reference/player/start-a-users-playback/ | BETA
  */
 function changeUserPlayback(type, uris, access_token) {
@@ -209,79 +186,6 @@ function changeUserPlayback(type, uris, access_token) {
     },
     contentType: 'application/json',
     data: JSON.stringify(req_data),
-    success: function (response) {
-      console.log(response);
-    },
-    error: function (err) {
-      console.log(err);
-    }
-  });
-}
-
-/**
- * Save one or more tracks to the current user’s ‘Songs’ library
- * @param {string[]} track_ids An array of Spotify Track IDs.
- *                             The base-62 identifier that you can find at the 
- *                             end of the Spotify URI (e.g. spotify:track:4iV5W9uYEdYUVa79Axb7Rh) 
- *                             for a track, e.g. 4iV5W9uYEdYUVa79Axb7Rh
- * @param {string} accessToken A valid access token from the Spotify Accounts service 
- * @see https://beta.developer.spotify.com/documentation/web-api/reference/library/save-tracks-user/
- */
-function saveTracksToUserLibrary(track_ids, access_token) {
-  $.ajax({
-    type: 'PUT',
-    url: `https://api.spotify.com/v1/me/tracks`,
-    headers: {
-      'Authorization': 'Bearer ' + access_token
-    },
-    contentType: 'application/json',
-    data: JSON.stringify({ "ids": track_ids }),
-    success: function (response) {
-      console.log(response);
-    },
-    error: function (err) {
-      console.log(err);
-    }
-  });
-}
-
-/**
- * Set the repeat mode for the user’s playback. 
- * @param {string} state "track" will repeat the current track
- *                       "context" will repeat the current context
- *                       "off" will turn off repeat
- * @param {string} accessToken A valid access token from the Spotify Accounts service 
- * @see https://beta.developer.spotify.com/documentation/web-api/reference/player/set-repeat-mode-on-users-playback/ | BETA
- */
-function repeat(state, access_token) {
-  $.ajax({
-    type: 'PUT',
-    url: `https://api.spotify.com/v1/me/player/repeat?state=${state}`,
-    headers: {
-      'Authorization': 'Bearer ' + access_token
-    },
-    success: function (response) {
-      console.log(response);
-    },
-    error: function (err) {
-      console.log(err);
-    }
-  });
-}
-
-/**
- * Toggle shuffle on or off for user’s playback.
- * @param {Boolean} state Shuffles user's playback if true.
- * @param {string} accessToken A valid access token from the Spotify Accounts service  
- * @see https://beta.developer.spotify.com/documentation/web-api/reference/player/toggle-shuffle-for-users-playback/ | BETA
- */
-function shuffle(state, access_token) {
-  $.ajax({
-    type: 'PUT',
-    url: `https://api.spotify.com/v1/me/player/shuffle?state=${state}`,
-    headers: {
-      'Authorization': 'Bearer ' + access_token
-    },
     success: function (response) {
       console.log(response);
     },
