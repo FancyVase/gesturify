@@ -7,8 +7,8 @@ const VOLUME_MAX_POS = -200;
 const VOLUME_MIN_POS = 400;
 
 // Spotify States/ Types
-const SPOTIFY_TYPE = { ALBUM: "album", ARTIST: "artist", PLAYLIST: "playlist", TRACK: "track" };
-const REPEAT_STATE = { TRACK: "track", CONTEXT: "context", OFF: "off" };
+const SPOTIFY_TYPE = { ALBUM: 'album', ARTIST: 'artist', PLAYLIST: 'playlist', TRACK: 'track' };
+const REPEAT_STATE = { TRACK: 'track', CONTEXT: 'context', OFF: 'off' };
 const SHUFFLE_STATE = { ON: true, OFF: false };
 
 // Selectors
