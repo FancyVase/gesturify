@@ -1,8 +1,21 @@
 {
   "author": "Spotify",
-  "name": "web-api-auth-examples",
-  "description": "Basic examples of the Spotify authorization flows through OAuth 2",
-  "version": "0.0.2",
+  "contributors": [
+    "Maryam Archie <marchie@mit.edu>",
+    "Hiram Moncivais <hmonciva@mit.edu>"
+  ],
+  "name": "gesturify",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FancyVase/gesturify.git"
+  },
+  "description": "control Spotify with gestures + speech",
+  "keywords": [
+    "spotify", "leap motion", "gestures", "speech recognition"
+  ],
+  "license": "MIT",
+  "version": "1.3",
+  "private": true,
   "dependencies": {
     "cookie-parser": "1.3.2",
     "express": "~4.16.0",
