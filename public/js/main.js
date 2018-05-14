@@ -161,7 +161,7 @@ function toggleVolumeMode() {
   $('.ui.button.playlist').addClass('disabled');
   $('.ui.button.volume').addClass('disabled');
   $('.ui.button.controller').removeClass('disabled');
-  changeVolumeMode = true;
+  changeVolumeMode = !changeVolumeMode;
 }
 
 function toggleMode() {
