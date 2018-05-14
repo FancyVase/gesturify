@@ -7,11 +7,11 @@
  * 
  */
 function detectCircleDirection(frame, gesture) {
-    var pointableID = gesture.pointableIds[0];
-    var direction = frame.pointable(pointableID).direction;
-    var dotProduct = Leap.vec3.dot(direction, gesture.normal);
+  var pointableID = gesture.pointableIds[0];
+  var direction = frame.pointable(pointableID).direction;
+  var dotProduct = Leap.vec3.dot(direction, gesture.normal);
 
-    return dotProduct > 0;
+  return dotProduct > 0;
 }
 
 /**
@@ -21,12 +21,12 @@ function detectCircleDirection(frame, gesture) {
  * @returns True if the hand is making Play/ Pause gesture, False otherwise.
  */
 function detectPlayPauseGesture(hand) {
-    var pitch = hand.pitch();
-    var grabStrength = hand.grabStrength;
-    var openHand = grabStrength < 0.25;
-    var verticalHand = (pitch > 1.15 && pitch < 2);
+  var pitch = hand.pitch();
+  var grabStrength = hand.grabStrength;
+  var openHand = grabStrength < 0.25;
+  var verticalHand = (pitch > 1.15 && pitch < 2);
 
-    return openHand && verticalHand;
+  return openHand && verticalHand;
 }
 
 /**
@@ -36,11 +36,11 @@ function detectPlayPauseGesture(hand) {
  * @returns True if next track should play, False otherwise.
  */
 function detectNextTrackGesture(hand) {
-    // Check that thumb is pointing right.
-    var pointRight = hand.pointables[0].direction[0] > 0;
-    var closedHand = hand.grabStrength > 0.75;
+  // Check that thumb is pointing right.
+  var pointRight = hand.pointables[0].direction[0] > 0;
+  var closedHand = hand.grabStrength > 0.75;
 
-    return closedHand && hand.thumb.extended && pointRight;
+  return closedHand && hand.thumb.extended && pointRight;
 }
 
 /**
@@ -50,9 +50,9 @@ function detectNextTrackGesture(hand) {
  * @returns True if previous track should play, False otherwise.
  */
 function detectPreviousTrackGesture(hand) {
-    // Check that thumb is pointing left.
-    var pointLeft = hand.pointables[0].direction[0] < 0;
-    var closedHand = hand.grabStrength > 0.75;
+  // Check that thumb is pointing left.
+  var pointLeft = hand.pointables[0].direction[0] < 0;
+  var closedHand = hand.grabStrength > 0.75;
 
-    return closedHand && hand.thumb.extended && pointLeft;
+  return closedHand && hand.thumb.extended && pointLeft;
 }
