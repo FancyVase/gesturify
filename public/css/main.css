@@ -47,13 +47,15 @@ body {
     text-align: center;
     position: 'relative';
     margin-left: 20%;
+    font-size: 20px;
 }
 
 .pusher .ui.grid .row .column #artist {
+    margin-top: 10px;
     margin-bottom: 5%;
 }
 
-.pusher .ui.grid .row .column #info-button {
+.pusher .ui.grid .row .column #corner {
     margin-top: 2%;
     margin-left: 92.5%;
 }
@@ -86,6 +88,7 @@ body {
     margin-left: 47%;
 }
 
-#song-text {
-    font-size: 18px;
+.pusher .ui.grid .row .column .ui.buttons#user-guide-button {
+    text-align: center;
+    margin-left: 57%;
 }

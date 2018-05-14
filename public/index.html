@@ -86,7 +86,7 @@
       <div class="ui middle aligned one column centered grid">
         <div class="row">
           <div class="column">
-            <button class="circular ui animated button" id="info-button" onclick="showModal()">
+            <button class="circular ui blue animated button info-button" id="corner" onclick="showModal()">
               <div class="visible content">
                 <i class="info icon"></i>
               </div>
@@ -123,34 +123,51 @@
             </div>
           </div>
         </div>
-    </div>
+        <div class="row">
+          <div class="column">
+            <div class="ui buttons" id="user-guide-button">
+                <button class="ui primary button" onclick="showModal()" >User Guide</button>
+            </div>
+          </div>
+        </div>
 
-    <div class="ui modal">
-      <i class="close icon"></i>
-      <div class="header">
-        Gesturify Commands
-      </div>
-      <div class="content">
-        <div class="description">
-          <div class="ui header">Gestures</div>
-          <p><span class="command">Play/Pause:</span> Extend hand in a "STOP" motion</p>
-          <p><span class="command">Next Song:</span> Close hand and extend thumb left</p>
-          <p><span class="command">Previous Song:</span> Close hand and extend thumb right</p>
-          <p><span class="command">Fast Forward Song:</span> Rotate the tip of the index finger in a clockwise direction</p>
-          <p><span class="command">Rewind Song:</span> Rotate the tip of the index finger in a counterclockwise direction</p>
-        
-          <div class="ui header">Voice</div>
-          <p><span class="command">Search:</span> Say "search" followed by the type of item you’re searching for. You can search for a "song", "artist", "album", or "playlist". Afterwards say your search query.</p>
-          <p>Example: Example: "Search song Stay Frosty Royal Milk Tea"</p>
+        <div class="ui modal">
+          <i class="close icon"></i>
+          <div class="header">
+            Gesturify Commands
+          </div>
+          <div class="content">
+            <div class="description">
+              <div class="ui header">Gestures</div>
+              <p>
+                <span class="command">Play/Pause:</span> Extend hand in a "STOP" motion</p>
+              <p>
+                <span class="command">Next Song:</span> Close hand and extend thumb left</p>
+              <p>
+                <span class="command">Previous Song:</span> Close hand and extend thumb right</p>
+              <p>
+                <span class="command">Fast Forward Song:</span> Rotate the tip of the index finger in a clockwise direction</p>
+              <p>
+                <span class="command">Rewind Song:</span> Rotate the tip of the index finger in a counterclockwise direction</p>
 
-          <div class="ui header">Multimodal (Gestures + Speech)</div>
-          <p><span class="command">Volume:</span> Say "change volume" to switch to volume mode. When in volume mode, move your hand vertically with your open hand face down to change the volume. Close your fist or say "set volume" when you’re done.</p>
-          <p><span class="command">Add current song to playlist:</span> In the Gesturify user interface, click the Add To Playlist button, point to a playlist  and say "Add this song to that playlist".</p>
+              <div class="ui header">Voice</div>
+              <p>
+                <span class="command">Search:</span> Say "search" followed by the type of item you’re searching for. You can search for a "song",
+                "artist", "album", or "playlist". Afterwards say your search query.</p>
+              <p>Example: Example: "Search song Stay Frosty Royal Milk Tea"</p>
+
+              <div class="ui header">Multimodal (Gestures + Speech)</div>
+              <p>
+                <span class="command">Volume:</span> Say "change volume" to switch to volume mode. When in volume mode, move your hand vertically
+                with your open hand face down to change the volume. Close your fist or say "set volume" when you’re done.</p>
+              <p>
+                <span class="command">Add current song to playlist:</span> In the Gesturify user interface, click the Add To Playlist button, point
+                to a playlist and say "Add this song to that playlist".</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-  </div>
 </body>
 
 </html>
