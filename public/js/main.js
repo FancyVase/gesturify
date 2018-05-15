@@ -157,7 +157,7 @@ function toggleVolumeMode() {
   $('.ui.button.playlist').addClass('disabled');
   $('.ui.button.volume').addClass('disabled');
   $('.ui.button.controller').removeClass('disabled');
-  changeVolumeMode = !changeVolumeMode;
+  changeVolumeMode = true;
 }
 
 function toggleMode() {
@@ -166,6 +166,7 @@ function toggleMode() {
   $('.ui.button.controller').addClass('disabled');
   addToPlaylistMode = false;
   changeVolumeMode = false;
+  updateTextAndTime();
 }
 
 function showModal() {
@@ -216,6 +217,7 @@ function selectPlaylist(hand, listingsTopPos) {
  * @param {Player} player The Spotify player.
  */
 function changeVolume(hand, player) {
+  $(TEXT_SELECTOR).text('Volume');
   var handPosition = hand.screenPosition();
   var yPosition = handPosition[1];
   var openHand = (hand.thumb.extended && hand.indexFinger.extended && hand.middleFinger.extended && hand.ringFinger.extended && hand.pinky.extended);
@@ -228,13 +230,13 @@ function changeVolume(hand, player) {
   if (yPosition > VOLUME_MAX_POS && yPosition < VOLUME_MIN_POS && openHand) {
     var volume = Math.round(((yPosition - VOLUME_MIN_POS) / (VOLUME_MAX_POS - VOLUME_MIN_POS)) * 100);
     player.setVolume(volume / 100).then(() => {
-      $(TEXT_SELECTOR).text('Volume: ' + volume + '%');
       resetText();
+      $(TEXT_SELECTOR).text('Volume: ' + volume + '%');
     });
   } else if (yPosition < VOLUME_MAX_POS && openHand) {
     player.setVolume(1).then(() => {
-      $(TEXT_SELECTOR).text('Volume: 100%');
       resetText();
+      $(TEXT_SELECTOR).text('Volume: 100%');
     });
   }
 }
