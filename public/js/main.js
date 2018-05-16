@@ -61,8 +61,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         if (addSongCommand) {
           addSongCommand = false;
           addTracksToPlaylist(user_id, selectedPlaylist, [currentTrackUri], access_token);
+          toggleMode();
           $(TEXT_SELECTOR).text('Song added!');
-          togglePlaylistMode();
+          
         }
       } else if (changeVolumeMode) {
         changeVolume(hand, player);
