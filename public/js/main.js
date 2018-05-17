@@ -339,6 +339,15 @@ var processSpeech = function (transcript) {
       } catch (e) {
         console.error(e);
       }
+    } else { // Search for song by default
+      let words = transcript.split(' ');
+      try {
+        // Offset search query if user said "Search for..."
+        let indexOffset = words.indexOf('for') > -1 ? 1 : 0;
+        search(words.slice(indexOffset + 1).join(' '), 'track', access_token);
+      } catch (e) {
+        console.error(e);
+      }
     }
   }
 
